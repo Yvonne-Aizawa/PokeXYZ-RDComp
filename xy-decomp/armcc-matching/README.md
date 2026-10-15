@@ -1701,7 +1701,7 @@ Kinds (find them all with
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
 | `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
-| `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c |
+| `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848 |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
 `volatile` / static functions / armcc extensions / literal-assigned locals /
@@ -1979,6 +1979,18 @@ Open DllSalon: `0xdfc` (5-case property switch, needs `--mask-ranges`), `0x4ac` 
 
 - `DllBattle@0xc9220` (0x2c, 11/11): `fa(o->x /*+0xc*/, o->vt[23](o))` — virtual call whose result is tail-called with a field. `0xc9298` (0x2c, 11/11): same with `vt[24]`. `0xc92c4` (0x2c, 11/11): same shape as `0xc9298`, different callee. `0xc8eb0` (0x1c, 7/7): `return o->vt[18](o) != 0`. `0xc8f94` (0x20, 8/8): `if (o->vt[24](o) != 4) return 1; return 0;`.
 - Open: `0xc9018` (0x2c) masks 11/11 as `void fn(O *o, int a) { fa(o->x /*+0x14*/, o->vt[68](o, a)); }` but needs an unused `int a` (would be `trick(extra-arg)`); `0x2cbfc` (`if (vt[0x98](o)) { o->b346 = a; tail fn(o); }`) and `0x2cdc4` (`if (vt[0x98](o)) fn(o->x, a)`) — gated tail-call siblings of the `0x2c9bc` family; compare-and-return wrappers `0x42c0c`/`0x42c30` (`vt[0x80]`, `r == 160 || r == 161` and `r == 103 || r == 104`); `0x39884`.
+
+## 2026-10-15 swarm batch 30
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllStatus` | `0x4184` (0x10, 4/4) | natural | `f6280(); tail f310()` |
+| `DllBag` | `0x137f0` (0x3c, 15/15) | natural | clears field +0x88, calls two helpers, sets the field to 1 if the 2nd call is nonzero and the field is still 0; written `void` (retail leaves r0 live at the pop) |
+| | `0x1382c` (0x10, 4/4) | natural | `fc78(); tail f300()` |
+| | `0x13848` (0x38, 14/14) | **trick(ordering-local)** | dtor stage: vtable, free `buf` at +0x14 if non-null + zero, tail-call `f300(this)`; `void *vt = VT;` local forces the pool load ahead of the member load (natural form: 10/14) |
+| | `0x13880` (0x34, 13/13) | natural | same dtor without the tail call, returns `this` |
+
+**Docs findings (DllBag dtor agent):** declare the vtable as an array / `extern char VT[];`, not a scalar pointer — `void *VT` adds a dereference of the pool word and breaks the match; and the size passed to `fingerprint_fn.py` must include the trailing literal-pool word for dtors. Worth retrying the known-bad destructors (see `attempted.md`) with these in mind.
 
 ## What this does *not* do yet
 
