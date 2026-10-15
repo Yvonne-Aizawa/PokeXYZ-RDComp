@@ -15,6 +15,20 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBag@0x10844 (size 0x58)
+
+- What it is: sibling of 0x7330/0xc508 state handlers, but `fnB(this)` is called before the `b == 1` test; `b = this->q->b` (q at +0x44) is loaded into r6 before the call.
+- Tried: the sibling `struct Sub *s = &this->sub` style (true branch via `s->p->h`, `s->v`) -> best 15/22; every variant writing the true branch via `this` flips register allocation (this->r4, s->r6/r5, b->r5): 8-9/22.
+- Stuck on: retail's true branch uses `ldr r3,[r5,#8]` (this, not s), hoists `mov r1,#0 / r2,#75 / r0,#1`, then `strh / str [r5,#56]! / str [r5,#8]`.
+- Lead for next time: a source form where `s` (= this+8) stays live in r4 but the true branch addresses via `this`.
+
+## DllBag@0x1089c (size 0x54)
+
+- What it is: `fnC(this->y->ctx, this+0x50, 5, 0, 0, 0)` (two stack zeros); `this->st = 55; this->y->flag(+0x2c) = 1; return 4`.
+- Tried: `int r = 4;` local (spills to r5, 8/21).
+- Stuck on: 14/21 — retail does `ldr r0,[r4,#76]; mov r1,#1; mov r2,#4; strb r1,[r0,#44]; mov r0,r2` (return value 4 hoisted into r2 before the store); mine emits `ldr r1 / mov r0,#1 / strb / mov r0,#4`.
+- Lead for next time: none yet (constant-hoisting class).
+
 ## DllTownmap@0xaa4 (size 0x6c; sibling 0xa34) -- relaxed-only, NOT a masked match
 
 - What it is: dtor stage — store VT, virtual-delete members `[0x14]` (slot 6) / `[0x18]` (slot 1) zeroing, `fn1b8(this+0x1c)`, `return (char*)fn228(this+0x1c) - 0x1c` (void* callee). 0xa34 is the same with `pop {..,lr}` + tail `b fn230`.

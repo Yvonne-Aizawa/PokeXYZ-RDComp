@@ -1695,7 +1695,7 @@ Kinds (find them all with
 |---|---|---|
 | `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 9 (globals-init family) |
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
-| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34 |
+| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
 | `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
@@ -1933,6 +1933,19 @@ Open DllField: `0x76f8`/`0x9ae0`/`0x9ae8` (`mov r0,#1` stubs), `0x7970`/`0x58b8`
 
 - `DllTownmap@0x5ac` (0x54, 21/21, natural): release helper — virtual-deletes members `[0x14]` (vtable slot 6) and `[0x18]` (slot 1) if set, zeroing each, then `fn(this+0x1c)`, returns `this->[0xc]`. `0xd68` (0x1c, 7/7, **trick(extra-arg)**): virtual wrapper — if `this->[0x88]`, tail-calls vtable slot 3 forwarding two int args (two args put the vtable in r3, one arg in r2, as in `0xb10`). `0xd84` (0x10, 4/4, natural): tail-call thunk `fn(this->[0x5c], this->[0x58], 0)`.
 - **Relaxed-only (not counted):** `DllTownmap@0xaa4` (0x6c) — dtor stage, 26/26 with `--relax-nops`, 21/27 masked; sibling `0xa34` same body with a tail `b`. Same signature as `relaxed/DllBattle/0x30a4.c`: a destructor whose retail has one nop before a `bl`. Two independent cases now — the nop is the only difference — suggesting a recurring post-link relaxation window after the virtual-delete sequence.
+
+## 2026-10-15 swarm batch 25
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x76f8`, `0x9ae0` (0x8, 2/2) | natural | return-true stubs |
+| | `0x7970` (0xc, 3/3) | natural | sets byte at this+28 to 1 |
+| | `0x630c` (0xc, 3/3) | natural | tail-calls `fn(this->p /*+164*/, 0)` |
+| | `0x10c54` (0x20, 8/8) | **trick(redundant-local)** | mirror of `0x10c34`: `sub[84]=1; sub[85]=0; this[73]=1`; locals `z=0, o=1` required |
+| `DllBag` | `0x11398` (0x2c, 11/11) | natural | dtor stage storing a passed-in vtable, `g1(o->sub->m)`, tail-call `g3((char*)g2(o+0x50)-0x50)` |
+| | `0x113c8` (0x30, 12/12) | natural | same body, vtable from the pool word (size includes it); returns `(char*)g2(o+0x50)-0x50` |
+
+Open DllField: `0x8604` (looks identical to `0x630c`), `0x9ae8` (return-1 stub), `0x112c8`/`0x112dc`/`0x112f0` (vtable-call wrappers returning 0, slots 0/4/8). DllBag `0x13880`/`0x137f0` (destructor/stateful) untried.
 
 ## What this does *not* do yet
 
