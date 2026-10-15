@@ -2073,6 +2073,17 @@ Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), D
   - `add r0,r0,#N; ldrh` getters: `0x1cc04`, `0xc86c8`, `0xc8754`, `0x4c278`, `0x4c7fc`
   - bit-pack builders: `0x704ac`, `0x76e20`, `0x797b0`
 
+## 2026-10-15 swarm batch 39 — DllField push-less leaves (all `Style: natural`)
+
+- `0x412d0` (0xc, 3/3): pair setter, stores arg1/arg2 at `this+28/+32` (`add r0,#28; stm`). `0x36d18` (0x10, 4/4): `this+24 = owner; this+32 = owner->+408`. `0x74dc8` (0x10, 4/4): sets `this->kind` (+134) to 1, returns `&arg1->sub` (+256). `0x7f60c` (0x10, 4/4): table getter — u16 at +10 of the 12-byte entry `[i]` with the table pointer in r3 (4th arg). `0x9ff58` (0xc, 3/3): getter `this->+68->+148`.
+- **Sibling families for the next round** (same C, only constants change):
+  - pair setter (`add r0,#28; stm`): `0x1959c`, `0x41f24`, `0x42f7c`, `0x444f0`, `0x4344c`, `0x9888` (store at +28); `0x417f8` (+44)
+  - owner-init (`str r1,[r0,#24]; ldr r1,[r1,#408]; str r1,[r0,#N]`): `0x2aec4`, `0x343b4` (N=28); `0x3424c` (N=36); `0x387c0`, `0x3e5c8` (N=32)
+  - kind setter + sub-record address: `0x74dd8` (K=2, +276), `0x74de8` (K=3, +296), `0x74df8` (K=3, +308), `0x74e08` (K=3, +320), `0x74e18` (K=4, +332)
+  - table getters: `0x7f628` (+22), `0x7f65c` (+8), `0x7f678` (+20); chain getters: `0xa0bdc` (+152), `0xa0024` (`ldrb`, +160)
+  - other shapes worth a try: `ldr r1,[pc,#4]; str r1,[r0]; bx lr` vptr setters (`0x28b24`, `0x28dc0`, `0x2905c`, `0x2907c`, `0x2941c`, `0x29abc`, `0x29e1c`); range predicates (`0x4a408`, `0x57d1c`, `0x57d54`); `vldr`/`vstr` zero-float inits (`0x7f40`, `0x7fb78`); `ldmia`/`vstmia` struct copies (`0x72534`, `0x72554`, `0x7dbc4`, `0x70f58`)
+- **Scan caveat:** Ghidra's function list omits push-less leaves (why they were unexamined); the scan cuts chunks at push/pop/b/bl/bx and leading literal-pool words show up as junk instructions that need stripping — the recipe is in the `0x412d0` header.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
