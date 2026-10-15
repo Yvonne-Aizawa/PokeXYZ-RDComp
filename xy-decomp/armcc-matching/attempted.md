@@ -15,6 +15,27 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllZukan@0x8adc (size 0xd4)
+
+- What it is: table lookup — loop `i < 7` over a 28-byte-stride global table comparing field0 to the arg; on a hit, scan `short arr[o->n@0xd4]` at 0xd6 for `i`, store the index to `short@0xe4`, range-check `(u8)i < 7` else `err(0,0,0)`, store a byte global, `fn(o,i)`, `fn2(o->q@0xe8->@0xd4, 0)`, vtable slot 2 call with `(p@0xd0, i & 0xff)`; returns 0 else 1.
+- Tried: for / while / do-while, `n` hoisted vs `o->n` each iteration, `short j` (adds `sxth`, worse).
+- Stuck on: best 46/53; only diff is a register swap in the inner scan loop (retail: count in r1, `j` in r0, `cmp r1,r0; bgt`; ours: count r0, `j` r1, `blt`).
+- Lead for next time: find the shape that makes armcc allocate `n` before `j` (maybe the scan is an inlined helper).
+
+## DllGts@0x9824 (size 0x38)
+
+- What it is: dtor-ish — `p = this->p@0x20; if (p) { p->vt[6](p); this->p = 0; } fn(this+0x24); return this->r@0x14`.
+- Tried: int-returning virtual, local zero variable.
+- Stuck on: best 12/14 — retail keeps the zero for `this->p = 0` in r1 (`mov r1,#0; str r1,[r4,#32]`); armcc uses r0 (same zero-register class as DllBox@0x1dfac, DllField@0xe380).
+- Lead for next time: none yet.
+
+## DllHeading@0x87e4 (size 0x38) / 0x881c (size 0x34)
+
+- What it is: destructors (tail-call / returns `this`) with the usual `vt`-local dtor idiom.
+- Tried: no `vt` local; explicit zero local (both worse).
+- Stuck on: 12/14 and 11/13 — retail zeroes the member with `mov r1,#0; str r1,...`, we emit r0 (the same zero-register class).
+- Lead for next time: none yet.
+
 ## DllStatus@0x2fd8 (size 0x64) and 0x2e90 -- relaxed-only, NOT a masked match
 
 - What it is: forward search loop. `f480(buf, this->f4); start = n; for (;;) { n++; if ((unsigned)n >= 6) { n = start; break; } if (f4b0(this->f16, n, buf)) break; } f490(buf); return n;` (`buf[4]`). 0x2e90 has the same shape.

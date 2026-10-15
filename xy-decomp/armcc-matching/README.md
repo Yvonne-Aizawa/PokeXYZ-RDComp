@@ -1699,7 +1699,7 @@ Kinds (find them all with
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
 | `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
-| `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790 |
+| `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790, DllHeading@0x868, 0x16f4, 0x8ac, 0x1738 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
 | `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848 |
 
@@ -1991,6 +1991,23 @@ Open DllSalon: `0xdfc` (5-case property switch, needs `--mask-ranges`), `0x4ac` 
 | | `0x13880` (0x34, 13/13) | natural | same dtor without the tail call, returns `this` |
 
 **Docs findings (DllBag dtor agent):** declare the vtable as an array / `extern char VT[];`, not a scalar pointer — `void *VT` adds a dereference of the pool word and breaks the match; and the size passed to `fingerprint_fn.py` must include the trailing literal-pool word for dtors. Worth retrying the known-bad destructors (see `attempted.md`) with these in mind.
+
+## 2026-10-15 swarm batch 31
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllZukan` | `0x8338` (0x20, 8/8) | natural | `fn(this->p@0x3c)`, returns `byte@0x40 != 0` (same source as `0x344c`) |
+| | `0x8ab8` (0x24, 9/9) | natural | sibling of `0x8a70`/`0x8a94`: if `p@0xd0`, vtable slot 3 (+12) with `(p, a)`, returns 0; `a` must be forwarded (6/9 without) |
+| `DllGts` | `0x7e50`, `0x80f0` (0x3c, 15/15) | natural | `fn(c@0x20, this+0x24, 3 / 4, 0, p->byte@0x226 / 0x227, 0)` — two stack args, returns 5 |
+| | `0x93ac` (0x34, 13/13) | natural | if `fn(this)` non-zero return `r@0x1c`; else if `byte@4` store 6 to `r@0x14` and return 1; else return 2 |
+| `DllBattle` | `0xc9018` (0x2c, 11/11) | natural | `void fn(O *o, int a) { fa(o->x /*+0x14*/, o->vt[68](o, a)); }` (the arg is forwarded to the call, so natural) |
+| | `0x42c0c` (0x24, 9/9) | natural | `r = o->vt[32](o, a); return r == 160 \|\| r == 161;` |
+| | `0x42c30` (0x24, 9/9) | natural | same, `r == 103 \|\| r == 104` |
+| `DllHeading` | `0x55d8` (0x48, 18/18) | natural | looks up an 8-byte table entry by index; two imports on the sub-object at +4 with the entry's byte (2nd takes stack arg 1) |
+| | `0x868` (0x40), `0x16f4` (0x40) | **trick(void-ptr-passthrough)** | passed-in vtable stored, two fields forwarded to `o->q->h`, tail-call with base adjusted by -4 (`(char*)fn(p) - 4`) |
+| | `0x8ac` (0x44), `0x1738` (0x44) | **trick(void-ptr-passthrough)** | same with the vtable from the literal pool; returns the adjusted pointer |
+
+Open DllHeading: the same two shapes also masked-match at `0x1ca8`/`0x3df0`/`0x8c58` (tail form, size 0x40) and `0x1cec`/`0x3e34`/`0x8c9c` (literal-pool form, size 0x44) — unsaved; plus dtors `0x87e4` (0x38) / `0x881c` (0x34) at 12/14 / 11/13 (retail zeroes the member via r1). Open DllBattle: `0x39884` (long chain of virtual calls and compares), `0x2cbfc`/`0x2cdc4` (gated tail-call siblings). DllGts `0x7c74` (`fn(this->c@0x20, 1); return 4`, masks 6/6, unsaved).
 
 ## What this does *not* do yet
 
