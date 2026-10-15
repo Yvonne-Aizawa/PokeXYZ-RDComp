@@ -1903,6 +1903,12 @@ Open: DllPuzzle `0xb3fc`/`0xbf80` (0x38, free `this+0x14` + tail-call base), `0x
 - `DllBox@0x1dde8` (0x48, 18/18): init helper — stores `arg->f` into the owned sub-object, two veneer calls, stores `(*(f->[28])) + 0x13650`, returns 1. `arg->f` must be loaded once into a `void*` local and reused or the register schedule is wrong. `0x1dd60` (0x88, 34/34): teardown — walks `this->in->p`; if non-null and `q->c != 1`, virtual call (slot 9) plus four helper calls, then tail-calls a helper on `p->x` if non-null (matched first try).
 - Open: DllBox small `ldr r0,[r0,#N]` getters near `0x12840`-`0x128a0`; switch tails around `0x1c9f4`-`0x1ce78`.
 
+## 2026-10-15 swarm batch 21 (all `Style: natural`)
+
+- `DllZukan@0x344c` (0x20): calls an import with `this->p` (+0x3c), returns `this->byte40 != 0`. `0x20b8` (0x28): vtable slot 0x20 on `this->p` (+0x44), returns `this->byte48 != 0`. `0xab20` (0x28): same as `0x20b8` with `+0x3c`/`byte40`.
+- `0x8a70` (0x24): if `this->p` (+0xd0) non-null, vtable slot 1 with `(p, a)`, returns 0. `0x8a94` (0x24): same, slot 0. Retail loads the vtable pointer into r2, so the C takes the forwarded `int a` (it is passed on to the callee, so kept as natural).
+- Open: `0x8338` (masked-matches the `0x344c` source, unwritten), `0x8ab8` (same as `0x8a70`, slot offset 12, untested).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
