@@ -1693,15 +1693,15 @@ Kinds (find them all with
 
 | kind | what it is | files tagged |
 |---|---|---|
-| `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 9 (globals-init family) |
+| `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 10 (globals-init family, incl. DllSalon@0xdd0) |
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
 | `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
 | `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
-| `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0 |
+| `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
-| `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4 |
+| `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
 `volatile` / static functions / armcc extensions / literal-assigned locals /
@@ -1724,7 +1724,7 @@ set the tag (see `pending/README.md`).
 `--relax-nops` (nop words dropped from both sides, pool offsets masked) is
 filed under `relaxed/<Module>/<offset>.c` and excluded from the totals; it is
 the analogue of a row in `pokebw2`'s `docs/nonmatching-functions.md`. Current
-list: `relaxed/DllBattle/0x30a4.c` (26/26 relaxed, destructor); DllTownmap@0xaa4 and 0xa34 (same shape; source not saved, see `attempted.md`).
+list: `relaxed/DllBattle/0x30a4.c` (26/26 relaxed, destructor); DllTownmap@0xaa4 and 0xa34 (same shape; source not saved, see `attempted.md`); DllStatus@0x2fd8 and 0x2e90 (search loop, nop between `cmp` and `beq`; source in `attempted.md`).
 
 ## 2026-10-15 swarm batch (9 functions, independently re-verified)
 
@@ -1951,6 +1951,24 @@ Open DllField: `0x8604` (looks identical to `0x630c`), `0x9ae8` (return-1 stub),
 
 - `DllBattle@0x2c9bc` (0x30, 12/12): `if (this->vt[0x98/4](this)) tail-call fn(this->+0x12c);` void. `0x2c9f4` (0x34, 13/13): same, `return fn(...)` else `return 1`. `0x2c8c0` (0x38, 14/14): same, else `return 0.0f` (float; size includes the trailing pool word). `0x2d5a0` (0x38, 14/14): same source as `0x2c8c0`, different tail-call target. C: struct with vtable pointer, `pad[0x128]`, int at 0x12c; test is `o->vt[38](o)`.
 - Their tail-call callees (`0xa94`/`0xaa4`/`0xaac`/`0xb04`) look like a related accessor family; ~120 small `blx`-using functions remain past `0x3a00` in DllBattle.
+
+## 2026-10-15 swarm batch 27
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllStatus` | `0x2e54` (0x20, 8/8) | natural | `f470(c, f468(this->f8))` with the 3rd arg kept in r4 across the call, tail-calling `f470` |
+| | `0x2e74` (0x1c, 7/7) | natural | tail-calls `f470(f478(this->f8), c)` |
+| `DllGts` | `0x5ad4` (0x1c, 7/7) | **trick(ordering-local)** | `f4f4(**(this+16), *(int*)(this+48))`, returns 50; only matches with two locals (`q`, `v`) |
+| | `0x36d4` (0x18, 6/6) | natural | `f314(this+32)`, returns int at `this+20` |
+| | `0x486c` (0x18, 6/6) | natural | tail-calls `f4ec(f4cc(this), c)` |
+| `DllSalon` | `0xd5c` (0x38, 14/14) | **trick(ordering-local)** | dtor stage: installs the vtable, frees member +0x14, tail-calls a second import (size includes its pool word at 0xd90) |
+| | `0xd94` (0x34, 13/13) | natural | dtor stage: loads member +0x14 first, installs the vtable, frees if non-null, returns `this` — plain C matches here |
+| | `0xdd0` (0x2c, 11/11) | **trick(volatile-strd)** | globals init: -1 via `strd` to `g_a[1]` (array base +8), 0 to a second 64-bit global |
+| | `0x790` (0x20, 8/8) | **trick(void-ptr-passthrough)** | secondary-base thunk: import, post-indexed vtable store at +0x24, second import on the advanced pointer, returns result-0x24 |
+
+**Relaxed-only (not counted):** `DllStatus@0x2fd8` (0x64) and `0x2e90` — search loop, match only with `--relax-nops`; retail has a nop between `cmp r0,#0` and `beq` (a third nop-window variant besides the DllBattle@0x30a4 / DllTownmap@0xaa4 dtors).
+
+Open DllSalon: `0xdfc` (5-case property switch, needs `--mask-ranges`), `0x4ac` (call chain ending in `ldrd` + tail call), large functions `0x3a0`/`0x500`/`0x83c`/`0xaa0`. DllStatus `0x4184` (`f6280(); tail f310()`) matched but wasn't saved — a quick pickup.
 
 ## What this does *not* do yet
 
