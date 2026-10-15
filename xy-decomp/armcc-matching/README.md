@@ -1947,6 +1947,11 @@ Open DllField: `0x76f8`/`0x9ae0`/`0x9ae8` (`mov r0,#1` stubs), `0x7970`/`0x58b8`
 
 Open DllField: `0x8604` (looks identical to `0x630c`), `0x9ae8` (return-1 stub), `0x112c8`/`0x112dc`/`0x112f0` (vtable-call wrappers returning 0, slots 0/4/8). DllBag `0x13880`/`0x137f0` (destructor/stateful) untried.
 
+## 2026-10-15 swarm batch 26 (all `Style: natural`)
+
+- `DllBattle@0x2c9bc` (0x30, 12/12): `if (this->vt[0x98/4](this)) tail-call fn(this->+0x12c);` void. `0x2c9f4` (0x34, 13/13): same, `return fn(...)` else `return 1`. `0x2c8c0` (0x38, 14/14): same, else `return 0.0f` (float; size includes the trailing pool word). `0x2d5a0` (0x38, 14/14): same source as `0x2c8c0`, different tail-call target. C: struct with vtable pointer, `pad[0x128]`, int at 0x12c; test is `o->vt[38](o)`.
+- Their tail-call callees (`0xa94`/`0xaa4`/`0xaac`/`0xb04`) look like a related accessor family; ~120 small `blx`-using functions remain past `0x3a00` in DllBattle.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
