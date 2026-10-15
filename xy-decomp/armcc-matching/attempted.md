@@ -15,6 +15,13 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllStatus@0x3ed8 (size 0x48)
+
+- What it is: function loading a global, with a stack argument fed from `#0`.
+- Tried: several rewrites (details not logged by the agent).
+- Stuck on: 11/18. Retail keeps `this` in r4 and the loaded global in r5 (armcc swaps them) and reuses r1 for the `#0` that feeds the stack arg.
+- Lead for next time: none yet (register-allocation class, like DllTownmap@0x1324).
+
 ## DllBox@0x1dfac (size 0x6c; sibling 0x1df3c, size 0x70)
 
 - What it is: dtor — `vptr=VT1; if (o->[36]) f258(f910(f910(sub+108)-24)-84); f260(o->[32]); vptr=VT2; if (o->[20]) { f620(o->[20]); o->[20]=0; } return o`. 0x1df3c is the same body plus a tail-call of a base dtor instead of `return o`.

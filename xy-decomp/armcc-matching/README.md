@@ -1909,6 +1909,11 @@ Open: DllPuzzle `0xb3fc`/`0xbf80` (0x38, free `this+0x14` + tail-call base), `0x
 - `0x8a70` (0x24): if `this->p` (+0xd0) non-null, vtable slot 1 with `(p, a)`, returns 0. `0x8a94` (0x24): same, slot 0. Retail loads the vtable pointer into r2, so the C takes the forwarded `int a` (it is passed on to the callee, so kept as natural).
 - Open: `0x8338` (masked-matches the `0x344c` source, unwritten), `0x8ab8` (same as `0x8a70`, slot offset 12, untested).
 
+## 2026-10-15 swarm batch 22 (all `Style: natural`)
+
+- `DllStatus@0x2f80` (0x14, 5/5): tail-call wrapper `fn(this->f16, b, a)` with the two int args swapped. `0x2f94` (0x24, 9/9): next index with wrap — `n = fnCount(this->f8); return (i+1 < n) ? i+1 : 0`. `0x2fb8` (0x20, 8/8): previous index with wrap — `return i ? i-1 : n-1`.
+- `0xa378` (0x88, 34/34): `obj = this->f4`; for k in {0,1,11,13} calls obj vtable slot {0,1,2,3}(obj) and returns 1, else 0 — a plain `switch` matches. `0x8724` (0x88, 34/34): same dispatch with the object at `this->f136`.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
