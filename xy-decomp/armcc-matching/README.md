@@ -2060,6 +2060,19 @@ Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), D
 
 - `DllKisekae@0xb674` (0x38, 14/14, **trick(ordering-local)**): installs the vtable, frees the owned member at +0x14 if non-null and zeroes it, tail-calls the base dtor; needs `void *vt = VT; void *m = o->m;` so the pool load precedes the member load. `0xb6ac` (0x34, 13/13, **trick(ordering-local)**): frees the member and zeroes it, installs the vtable, returns `this`; here the member load comes first, so the hoisted `m = o->m` (no `vt` local) is what the ordering needs; size includes the trailing pool word (0x30 omits it and fails). The two look alike but need opposite load orders; a plain `o->vptr = VT; if (o->m) ...` fails on both.
 
+## 2026-10-15 swarm batch 38 — DllBattle push-less leaves (all `Style: natural`)
+
+- `0x567e0` (0x18, 6/6): fills 8 bytes by replicating the low byte of the arg into a u32 and storing it twice. `0x6fd18` (0x18, 6/6): same fill over 6 bytes (u32 + u16). `0xc9e84` (0x1c, 7/7): over 10 bytes (u32, u32, u16).
+- `0x5daf8` (0x14, 5/5): counted array getter `i < p[24] ? ((u32*)p)[i] : 0` (the `ldrhi/movls` conditional-execution form matches). `0x76360` (0x24, 9/9): zero-inits a struct with six u32 stores and a zero byte at +24.
+- **Scan:** functions of 0xc-0x60 bytes with no `push` and no `b`/`bl` ending in `bx lr` (bounds from the Ghidra `cro_c` filenames), minus anything in `matched/` — 59 non-trivial candidates remained; offsets are valid for `fingerprint_fn.py`.
+- **Families for the next round:**
+  - counted u32 array getter: `0x76384` (identical bytes to `0x5daf8`, same C should match); byte-array variant `0xc87a0` (`ldrbhi/movls #6`, count at +25)
+  - zero-init structs: `0xc5c18` (0x28, strb at +24/+25 plus six u32 stores), `0x71840` (u32+u16), `0xc9e58` (u32+u8), `0xc9e30` (0x28, two small functions)
+  - field copies: `0x5fa8c` (u32+u16), `0x5faa0` (u32+u8), `0xc9e68` (u32+u16+u8), `0x747fc` (2×u32)
+  - bit-test getters: `0x4aa9c`, `0x51c28` (`ldrb [27]; and #64/#32; lsr`); bitset-test `0x4c818`, `0x4ca4c`
+  - `add r0,r0,#N; ldrh` getters: `0x1cc04`, `0xc86c8`, `0xc8754`, `0x4c278`, `0x4c7fc`
+  - bit-pack builders: `0x704ac`, `0x76e20`, `0x797b0`
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
