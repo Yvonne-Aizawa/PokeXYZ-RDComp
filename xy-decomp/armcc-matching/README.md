@@ -1697,7 +1697,7 @@ Kinds (find them all with
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
 | `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
-| `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68 |
+| `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68, DllBattle@0x7a780 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
 | `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790, DllHeading@0x868, 0x16f4, 0x8ac, 0x1738 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
@@ -2029,6 +2029,13 @@ Retrying the "known-bad destructors" with two findings (array-declared vtable; a
 | | `0xa33c` (0x34, 13/13) | natural — returns `this` |
 
 Still failing (`attempted.md`): DllPuzzle@0xb3fc (12/14), DllBox@0x1dfac (23/25) and 0x1df3c (20/28) — all blocked by the zero-in-r1 diff (retail `mov r1,#0; str r1,[...]`, ours r0); DllTownmap@0x31a0 ctor wrapper (8/12); DllBattle@0x3038 and DllPokeList@0xa50 are relaxed-only at best (post-link nop words).
+
+## 2026-10-15 swarm batch 34
+
+- `DllBattle@0x42bf4` (0x18, 6/6, natural): `vt[0x3e](this)` then returns the byte at +0x27 of the result.
+- `DllBattle@0x7a780` (0x30, 12/12, **trick(extra-arg)**): takes `this` as the second argument; if `vt[0x42](this)` returns 0, tail-calls a function with `this->+0x190`. The unused first argument only puts `this` in r1.
+- `DllBattle@0x39884` (0x150, 84/84, natural): state classifier via a chain of virtual calls, returns 0-3 — 0 if `vt[0x42](this)` is set or `vt[0x10](this)` isn't 1-3; 3 for specific `vt[0x20](this,1)` results (4 and 39-45); 2 or 1 from the `vt[0x3a]`/`vt[0x39]`/`vt[0x35]` probes. The vtable must be typed `int (**vt)()` (unprototyped) because the slots take different argument counts. **Largest real-logic match so far.**
+- Open: `0x224c` (0x30, same shape as matched `0x2c60`). Scans of `0x40000`-`0x44000` and `0xc0000`-`0xd0000` found only these; the other hits were mid-function fragments.
 
 ## What this does *not* do yet
 
