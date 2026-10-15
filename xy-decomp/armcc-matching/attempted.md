@@ -15,6 +15,14 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## "Release member, zero via r1" destructor class (DllPuzzle@0xb3fc, DllHeading@0x87e4/0x881c, DllBox@0x1dfac/0x1df3c, DllGts@0x9824)
+
+- Status 2026-10-15: the leaf variant is cracked (DllField@0xae58/0xe3fc/0xe380, see `matched/` — `trick(live-r1-passthrough)`); the dtor shape is **not**.
+- Solved: the instruction-ordering part. Declare in this order: `void **vt = VT; void *m = o->f14; o->vptr = vt; if (m) { fn(m); o->f14 = 0; } return fn268(o);` (swapping the `vt`/`m` lines or storing `vptr` first gives the old mismatch). With it: Puzzle@0xb3fc 12/14, Heading@0x87e4 12/14, Heading@0x881c 11/13 — ONLY the zero register differs (retail `mov r1,#0; str r1,[r4,#20]`, ours r0). DllBox 0x1dfac/0x1df3c and DllGts@0x9824 were not re-run with the new ordering (Box has an extra vtable-call prefix).
+- How armcc allocates: the shared zero goes in the lowest free scratch register after r0 (`this`). In the leaf, retail had r1 live (an incoming arg passed through), so the zero went to r2; unused params don't keep r1 live, returning `x` does but adds `mov r0,r1`, and a `long long` return `((long long)x<<32)|(unsigned)t` keeps r1 live with zero extra code. In the dtor, after the call both r0 and r1 are free; armcc picks r0, retail r1.
+- Tried on top of the fixed ordering (all still r0 or worse): reusing the `vt`/`m` locals as the zero, hoisted `z=0` (lands in callee-saved r5), const-folding forms (`vt-vt`, `vt&0`, `m==0`), int/`void*`/`long long` callee result ignored, inline `memset`, struct wrapper assigned from a static const zero (adds pool loads), `*(int*)&f14=0`, `do{}while(0)`, an empty else, a 64-bit zero cast, a `char` zero.
+- Lead for next time: need r0 live across the store via a use that emits no code; a C++ context with an inlined smart-pointer `reset()` is the one unexplored idea.
+
 ## DllPuzzle@0x100c (size ?)
 
 - What it is: `if (f4->f2c->f60 == 1) f8 = 2` (push-less leaf).
@@ -95,13 +103,6 @@ Format per entry:
 - Tried: a static helper taking K as a parameter.
 - Stuck on: 0x94c 5/9, 0x928 mismatched. Retail loads K into r1 unconditionally before the `cmp` and reloads 1 for the second store; armcc emits a conditional `movne` and reuses r1.
 - Lead for next time: none yet.
-
-## DllField@0xe380 (also 0xe3fc, 0xae58) (size 0x10)
-
-- What it is: two-int zero-init helper.
-- Tried (2026-10-15): plain zero stores, `s->a = s->b = 0`, int-returning, extra unused 2/3 params, `int *p` with `p[0]`/`p[1]`, reversed store order, `register` local, `for` loop over `int[2]` (the loop uses r2 for the zero but emits an actual loop).
-- Stuck on: 1/4. Retail zeroes through r2; every candidate uses r1.
-- Lead for next time: none yet (same residue as the existing 0xae58 entry).
 
 ## DllStatus@0x3ed8 (size 0x48)
 

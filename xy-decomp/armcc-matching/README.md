@@ -1701,6 +1701,7 @@ Kinds (find them all with
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
 | `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790, DllHeading@0x868, 0x16f4, 0x8ac, 0x1738 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
+| `live-r1-passthrough` | return type widened (`long long` built from `this` and the incoming 2nd arg) only to keep r1 live so a shared zero lands in r2 — least natural form; true signature unknown | DllField@0xae58, 0xe3fc, 0xe380 |
 | `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848, DllPuzzle@0xbf80, DllTownmap@0x31d4, DllPhotoViewer@0x193c, DllStatus@0xa304, DllKisekae@0xb674, 0xb6ac |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
@@ -2083,6 +2084,11 @@ Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), D
   - table getters: `0x7f628` (+22), `0x7f65c` (+8), `0x7f678` (+20); chain getters: `0xa0bdc` (+152), `0xa0024` (`ldrb`, +160)
   - other shapes worth a try: `ldr r1,[pc,#4]; str r1,[r0]; bx lr` vptr setters (`0x28b24`, `0x28dc0`, `0x2905c`, `0x2907c`, `0x2941c`, `0x29abc`, `0x29e1c`); range predicates (`0x4a408`, `0x57d1c`, `0x57d54`); `vldr`/`vstr` zero-float inits (`0x7f40`, `0x7fb78`); `ldmia`/`vstmia` struct copies (`0x72534`, `0x72554`, `0x7dbc4`, `0x70f58`)
 - **Scan caveat:** Ghidra's function list omits push-less leaves (why they were unexamined); the scan cuts chunks at push/pop/b/bl/bx and leading literal-pool words show up as junk instructions that need stripping — the recipe is in the `0x412d0` header.
+
+## 2026-10-15 swarm batch 40 — zero-in-r1 leaf class cracked
+
+- `DllField@0xae58` (this+20/+24), `0xe3fc` (this+20/+24) and `0xe380` (this+24/+28) (each 0x10, 4/4, **trick(live-r1-passthrough)**): zero two adjacent ints, retail zeroes through r2. Mechanism: armcc puts the shared zero in the lowest free scratch register after r0 (`this`); retail had r1 live (an incoming arg handed back). An unused extra parameter does NOT keep r1 live; declaring `long long f(T *t, int x)` and returning `((long long)x << 32) | (unsigned)t` does, with zero extra code. **The real signature is unknown — this is the least natural trick form in the tree**; rewrite when the true signature is found.
+- The dtor variant of this class (`DllPuzzle@0xb3fc`, `DllHeading@0x87e4`/`0x881c`, `DllBox@0x1dfac`/`0x1df3c`, `DllGts@0x9824`) is still open, but its instruction ordering is solved (`void **vt = VT; void *m = o->f14; o->vptr = vt; if (m) {...}`); only the zero register differs. See `attempted.md`.
 
 ## What this does *not* do yet
 
