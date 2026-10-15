@@ -15,6 +15,13 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllField@0xe380 (also 0xe3fc, 0xae58) (size 0x10)
+
+- What it is: two-int zero-init helper.
+- Tried (2026-10-15): plain zero stores, `s->a = s->b = 0`, int-returning, extra unused 2/3 params, `int *p` with `p[0]`/`p[1]`, reversed store order, `register` local, `for` loop over `int[2]` (the loop uses r2 for the zero but emits an actual loop).
+- Stuck on: 1/4. Retail zeroes through r2; every candidate uses r1.
+- Lead for next time: none yet (same residue as the existing 0xae58 entry).
+
 ## DllStatus@0x3ed8 (size 0x48)
 
 - What it is: function loading a global, with a stack argument fed from `#0`.

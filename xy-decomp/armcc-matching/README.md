@@ -1695,7 +1695,7 @@ Kinds (find them all with
 |---|---|---|
 | `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 9 (globals-init family) |
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
-| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924 |
+| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
 | `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
@@ -1913,6 +1913,21 @@ Open: DllPuzzle `0xb3fc`/`0xbf80` (0x38, free `this+0x14` + tail-call base), `0x
 
 - `DllStatus@0x2f80` (0x14, 5/5): tail-call wrapper `fn(this->f16, b, a)` with the two int args swapped. `0x2f94` (0x24, 9/9): next index with wrap — `n = fnCount(this->f8); return (i+1 < n) ? i+1 : 0`. `0x2fb8` (0x20, 8/8): previous index with wrap — `return i ? i-1 : n-1`.
 - `0xa378` (0x88, 34/34): `obj = this->f4`; for k in {0,1,11,13} calls obj vtable slot {0,1,2,3}(obj) and returns 1, else 0 — a plain `switch` matches. `0x8724` (0x88, 34/34): same dispatch with the object at `this->f136`.
+
+## 2026-10-15 swarm batch 23
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBox` | `0x17514` (0x30, 12/12) | natural | state-step: 5-arg import `(ctx->h, 25, &o->b, ctx->f, 0)` via `o->ctx`, returns 38. Using `o->ctx->x` directly gives retail's store-0-first order; a local `ctx` or `int z=0` loads ctx first (9/12) |
+| | `0xeedc` (0x48, 18/18) | natural | check-then-act: `Chk(ctx->h->f4, 2, ctx->s24) == 0` -> 1, else `Do(ctx->h, ctx->b, s24, s26)` -> 0 (source recovered from the agent's scratch file) |
+| | `0x11098` (0x54, 21/21) | natural | pairwise table search comparing `t[i]`/`t[i+1]` for i=start,+2 while i<12, returns `i+105`/`i+106`; miss -> error import, return 105. Must be a `do-while` (a `for` adds an entry precheck). Trailing zero pad word excluded from size |
+| `DllField` | `0x5be0` (0x10, 4/4) | natural | `if (c) return 0; return 1;` (`arg3 == 0`) |
+| | `0x76ec` (0xc, 3/3) | natural | stores arg1/arg2 into the int pair at +28/+32 (`add r0,#28; stm`) |
+| | `0x5e34` (0x1c, 7/7) | natural | zeroes four floats at +4..+16 via `vldr` from the pool word + 4x `vstr` (size includes the pool word) |
+| | `0xe3f4` (0x8, 2/2) | natural | stub returning -1 |
+| | `0x10c34` (0x20, 8/8) | **trick(redundant-local)** | `sub[84]=0; sub[85]=1; this[73]=1`; locals `z=0, o=1` stop armcc hoisting the sub-pointer into r2 and mis-allocating constants |
+
+Open DllField: `0x76f8`/`0x9ae0`/`0x9ae8` (`mov r0,#1` stubs), `0x7970`/`0x58b8` (`strb #1,[r0,#28]` setters), `0x630c`/`0x8604` (`ldr r0,[r0,#164]; mov r1,#0; b` tail calls), `0x10c54` (mirror of `0x10c34`), `0x112c8`/`0x112dc`/`0x112f0` (vtable-call wrappers). DllBox: `0x12868`-`0x12888` and `0x1c9f4`-`0x1ce78` are switch case bodies, not standalone functions; `0x12840` itself is a jump-table switch (untried).
 
 ## What this does *not* do yet
 
