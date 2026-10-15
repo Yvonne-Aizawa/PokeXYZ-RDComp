@@ -2051,6 +2051,11 @@ Still failing (`attempted.md`): DllPuzzle@0xb3fc (12/14), DllBox@0x1dfac (23/25)
 
 Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), DllGts (22), DllPuzzle (6), DllEshop (2); **DllBattle has 794 and DllField 293 — those lists weren't examined**. Not matched: DllGts `0x2a08` (2/4, zero through r2 vs r1 — the zero-register class), `0x7c8c` (1 word: retail hoists `mov r1,#1`), DllPuzzle `0x100c` (3 words: retail avoids conditional execution where armcc emits `moveq`/`strbeq`).
 
+## 2026-10-15 swarm batch 36 (all `Style: natural`)
+
+- `DllGts@0x7c74` (0x18, 6/6): import call `(this->child@0x20, 1)`, returns 4. `0x824c` (0x3c, 15/15): 6-arg import call — 5th/6th spill to the stack and armcc packs them with `strd` — args `(this->child@0x20, &this->f24, 0, &state+0x250, state->int@0x218, 0)` with `state` = object at `this+0xc`; returns 5. `0x8354` (0x3c, 15/15): same shape, arg 3 = 1 and the int at `state+0x21c`; returns 13.
+- Remaining DllGts near `0x7cb0`-`0x8100` are large state-machine handlers.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction

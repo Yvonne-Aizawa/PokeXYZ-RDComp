@@ -26,6 +26,7 @@ Format per entry:
 - What it is: stores 8 and 3 through a pointer and sets `byte@0x3c`.
 - Stuck on: 1 word — retail hoists `mov r1,#1` ahead of the second store; armcc emits it after (constant-hoisting class).
 - Lead for next time: none yet.
+- Update 2026-10-15: size 0x24 — setter chain `this->@0xc` bytes +0 = 8, +1 = 3, plus `this->@0x3c = 1`; retail hoists the three constant `mov`s before the stores; plain and redundant-locals versions both 2/9.
 
 ## DllBattle@0x2cdc4 / 0x2cbfc / 0x2ce44 (0x38 each), 0x2c630 (0x50, probably the same)
 
