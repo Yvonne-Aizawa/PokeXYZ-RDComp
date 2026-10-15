@@ -15,6 +15,18 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllPuzzle@0x100c (size ?)
+
+- What it is: `if (f4->f2c->f60 == 1) f8 = 2` (push-less leaf).
+- Stuck on: misses 3 words — retail uses a branch here; armcc emits conditional execution (`moveq` / `strbeq`).
+- Lead for next time: a natural-looking way to stop armcc if-converting (a call or volatile read in the arm, or an `else` with real work).
+
+## DllGts@0x7c8c
+
+- What it is: stores 8 and 3 through a pointer and sets `byte@0x3c`.
+- Stuck on: 1 word — retail hoists `mov r1,#1` ahead of the second store; armcc emits it after (constant-hoisting class).
+- Lead for next time: none yet.
+
 ## DllBattle@0x2cdc4 / 0x2cbfc / 0x2ce44 (0x38 each), 0x2c630 (0x50, probably the same)
 
 - What it is: gated tail-calls with an int arg — `if (vt[0x98](o)) fa(o->x /*+0x12c*/, a)`; `if (vt[0x98](o)) { o->b346 = a; tail fa(o); }`; the same with `b348` (`a` = incoming r1).

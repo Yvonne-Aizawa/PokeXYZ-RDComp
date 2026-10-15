@@ -2037,6 +2037,20 @@ Still failing (`attempted.md`): DllPuzzle@0xb3fc (12/14), DllBox@0x1dfac (23/25)
 - `DllBattle@0x39884` (0x150, 84/84, natural): state classifier via a chain of virtual calls, returns 0-3 — 0 if `vt[0x42](this)` is set or `vt[0x10](this)` isn't 1-3; 3 for specific `vt[0x20](this,1)` results (4 and 39-45); 2 or 1 from the `vt[0x3a]`/`vt[0x39]`/`vt[0x35]` probes. The vtable must be typed `int (**vt)()` (unprototyped) because the slots take different argument counts. **Largest real-logic match so far.**
 - Open: `0x224c` (0x30, same shape as matched `0x2c60`). Scans of `0x40000`-`0x44000` and `0xc0000`-`0xd0000` found only these; the other hits were mid-function fragments.
 
+## 2026-10-15 swarm batch 35
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllHeading` | `0x1ca8`, `0x3df0`, `0x8c58` (0x40, 16/16) | **trick(void-ptr-passthrough)** | tail form: store the vtable passed in r1 at `this[0]`, push the two config ints (`this+16`, `this+20`) into the handle at `this->q->h` (`q` at +12, handle at `q+0x18`), tail-call with the sub-object (`this+4`) base adjusted by -4 |
+| | `0x1cec`, `0x3e34`, `0x8c9c` (0x44, 17/17) | **trick(void-ptr-passthrough)** | literal-pool form: own vtable from the pool (`extern void *VT[];`), same pushes, returns the sub-object base minus 4 |
+| `DllGts` | `0x16aec` (0x14, 5/5) | natural | sets the byte at `*(this+0xc)` to 1 and `this->byte@0x3c` to 1 |
+| | `0xb054` (0x14, 5/5) | natural | `this->ctx@0x24->byte@0x624 = 1`, returns 5 |
+| | `0xb0f4` (0x18, 6/6) | natural | `this->byte@0x40 = 1`, clears `this->ctx@0x24->byte@0x624` |
+| `DllPuzzle` | `0x99dc` (0x24, 9/9) | natural | copies four ints from a source struct into `this+0x3c/+0x40/+0xb0/+0xb4` |
+| `DllEshop` | `0x9a8` (0x10, 4/4) | natural | `this->byte@0xe4 = 1`, returns 1 |
+
+Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), DllGts (22), DllPuzzle (6), DllEshop (2); **DllBattle has 794 and DllField 293 — those lists weren't examined**. Not matched: DllGts `0x2a08` (2/4, zero through r2 vs r1 — the zero-register class), `0x7c8c` (1 word: retail hoists `mov r1,#1`), DllPuzzle `0x100c` (3 words: retail avoids conditional execution where armcc emits `moveq`/`strbeq`).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
