@@ -15,6 +15,13 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle@0x2cdc4 / 0x2cbfc / 0x2ce44 (0x38 each), 0x2c630 (0x50, probably the same)
+
+- What it is: gated tail-calls with an int arg — `if (vt[0x98](o)) fa(o->x /*+0x12c*/, a)`; `if (vt[0x98](o)) { o->b346 = a; tail fa(o); }`; the same with `b348` (`a` = incoming r1).
+- Tried: plain / negated / early-return forms, arg types int/char/short/unsigned/void*, local copy of the arg, static helper, function-pointer local, C++ member `virtual int v38()`, reordered `x` load.
+- Stuck on: all 12/14 — only the vtable-slot register differs. Retail does `mov r5,r1; ldr r1,[r0,#0x98]; blx r1`; armcc always emits `ldr r2 ... blx r2` when an int arg is live across the virtual call. Float-arg siblings (0x2ca28, 0x2d5d8) match since the arg is in s0.
+- Lead for next time: an extra-arg-style trick (cf. DllBattle@0xc9018) or an unknown original arg shape.
+
 ## DllZukan@0x8adc (size 0xd4)
 
 - What it is: table lookup — loop `i < 7` over a 28-byte-stride global table comparing field0 to the arg; on a hit, scan `short arr[o->n@0xd4]` at 0xd6 for `i`, store the index to `short@0xe4`, range-check `(u8)i < 7` else `err(0,0,0)`, store a byte global, `fn(o,i)`, `fn2(o->q@0xe8->@0xd4, 0)`, vtable slot 2 call with `(p@0xd0, i & 0xff)`; returns 0 else 1.

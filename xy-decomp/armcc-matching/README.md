@@ -2009,6 +2009,12 @@ Open DllSalon: `0xdfc` (5-case property switch, needs `--mask-ranges`), `0x4ac` 
 
 Open DllHeading: the same two shapes also masked-match at `0x1ca8`/`0x3df0`/`0x8c58` (tail form, size 0x40) and `0x1cec`/`0x3e34`/`0x8c9c` (literal-pool form, size 0x44) — unsaved; plus dtors `0x87e4` (0x38) / `0x881c` (0x34) at 12/14 / 11/13 (retail zeroes the member via r1). Open DllBattle: `0x39884` (long chain of virtual calls and compares), `0x2cbfc`/`0x2cdc4` (gated tail-call siblings). DllGts `0x7c74` (`fn(this->c@0x20, 1); return 4`, masks 6/6, unsaved).
 
+## 2026-10-15 swarm batch 32 (all `Style: natural`)
+
+- `DllBattle@0x2ca28` (0x44, 17/17): `if (vt[0x98](o)) fa(o->x /*+0x12c*/, a)` with a `float` arg. `0x2d5d8` (0x44, 17/17): same shape. `0x393d8` (0x20, 8/8): `return vt[0x3e](o)->b5 != 0`. `0x2cdfc` (0x8, 2/2): tail call `fa(o->x /*+0x12c*/)`. `0x2cc34` (0xc, 3/3): `return vt[0x98](o)` (virtual tail call).
+- **Int-arg gated tail-calls don't match yet:** `0x2cbfc`, `0x2cdc4`, `0x2ce44` (and likely `0x2c630`, 0x50) stop at 12/14 — retail does `mov r5,r1; ldr r1,[r0,#0x98]; blx r1`, armcc emits `ldr r2 ... blx r2` whenever an int arg is live across the virtual call (float-arg siblings match since the arg is in s0). See `attempted.md`.
+- Scan caveat: the agent only scanned functions starting with `push {..., lr}` in `0x2c000`-`0x2e000` / `0x39000`-`0x3a000`; push-less leaf functions weren't scanned.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
