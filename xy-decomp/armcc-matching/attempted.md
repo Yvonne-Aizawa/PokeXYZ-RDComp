@@ -15,6 +15,19 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllTownmap@0xaa4 (size 0x6c; sibling 0xa34) -- relaxed-only, NOT a masked match
+
+- What it is: dtor stage — store VT, virtual-delete members `[0x14]` (slot 6) / `[0x18]` (slot 1) zeroing, `fn1b8(this+0x1c)`, `return (char*)fn228(this+0x1c) - 0x1c` (void* callee). 0xa34 is the same with `pop {..,lr}` + tail `b fn230`.
+- Result: 26/26 with `--relax-nops` (one nop elided before the `bl fn228`); masked 21/27 because the retail nop can't be reproduced.
+- Lead: the code is right; only the post-link nop differs (same as DllBattle@0x30a4).
+
+## DllTownmap@0x928 / @0x94c (size 0x24 each)
+
+- What it is: `o = this[1]; if (o) o[1] = K; this[0x34] = 1; tail fn(this[0x14], 0)` with K = 1 (0x928) / 0 (0x94c).
+- Tried: a static helper taking K as a parameter.
+- Stuck on: 0x94c 5/9, 0x928 mismatched. Retail loads K into r1 unconditionally before the `cmp` and reloads 1 for the second store; armcc emits a conditional `movne` and reuses r1.
+- Lead for next time: none yet.
+
 ## DllField@0xe380 (also 0xe3fc, 0xae58) (size 0x10)
 
 - What it is: two-int zero-init helper.

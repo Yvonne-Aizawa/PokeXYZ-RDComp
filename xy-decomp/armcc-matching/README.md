@@ -1697,7 +1697,7 @@ Kinds (find them all with
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
 | `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
-| `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4 |
+| `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
 | `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
@@ -1724,7 +1724,7 @@ set the tag (see `pending/README.md`).
 `--relax-nops` (nop words dropped from both sides, pool offsets masked) is
 filed under `relaxed/<Module>/<offset>.c` and excluded from the totals; it is
 the analogue of a row in `pokebw2`'s `docs/nonmatching-functions.md`. Current
-list: `relaxed/DllBattle/0x30a4.c` (26/26 relaxed, destructor).
+list: `relaxed/DllBattle/0x30a4.c` (26/26 relaxed, destructor); DllTownmap@0xaa4 and 0xa34 (same shape; source not saved, see `attempted.md`).
 
 ## 2026-10-15 swarm batch (9 functions, independently re-verified)
 
@@ -1928,6 +1928,11 @@ Open: DllPuzzle `0xb3fc`/`0xbf80` (0x38, free `this+0x14` + tail-call base), `0x
 | | `0x10c34` (0x20, 8/8) | **trick(redundant-local)** | `sub[84]=0; sub[85]=1; this[73]=1`; locals `z=0, o=1` stop armcc hoisting the sub-pointer into r2 and mis-allocating constants |
 
 Open DllField: `0x76f8`/`0x9ae0`/`0x9ae8` (`mov r0,#1` stubs), `0x7970`/`0x58b8` (`strb #1,[r0,#28]` setters), `0x630c`/`0x8604` (`ldr r0,[r0,#164]; mov r1,#0; b` tail calls), `0x10c54` (mirror of `0x10c34`), `0x112c8`/`0x112dc`/`0x112f0` (vtable-call wrappers). DllBox: `0x12868`-`0x12888` and `0x1c9f4`-`0x1ce78` are switch case bodies, not standalone functions; `0x12840` itself is a jump-table switch (untried).
+
+## 2026-10-15 swarm batch 24
+
+- `DllTownmap@0x5ac` (0x54, 21/21, natural): release helper — virtual-deletes members `[0x14]` (vtable slot 6) and `[0x18]` (slot 1) if set, zeroing each, then `fn(this+0x1c)`, returns `this->[0xc]`. `0xd68` (0x1c, 7/7, **trick(extra-arg)**): virtual wrapper — if `this->[0x88]`, tail-calls vtable slot 3 forwarding two int args (two args put the vtable in r3, one arg in r2, as in `0xb10`). `0xd84` (0x10, 4/4, natural): tail-call thunk `fn(this->[0x5c], this->[0x58], 0)`.
+- **Relaxed-only (not counted):** `DllTownmap@0xaa4` (0x6c) — dtor stage, 26/26 with `--relax-nops`, 21/27 masked; sibling `0xa34` same body with a tail `b`. Same signature as `relaxed/DllBattle/0x30a4.c`: a destructor whose retail has one nop before a `bl`. Two independent cases now — the nop is the only difference — suggesting a recurring post-link relaxation window after the virtual-delete sequence.
 
 ## What this does *not* do yet
 
