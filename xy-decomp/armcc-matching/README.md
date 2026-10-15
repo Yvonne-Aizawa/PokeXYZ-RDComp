@@ -1970,6 +1970,11 @@ Open DllField: `0x8604` (looks identical to `0x630c`), `0x9ae8` (return-1 stub),
 
 Open DllSalon: `0xdfc` (5-case property switch, needs `--mask-ranges`), `0x4ac` (call chain ending in `ldrd` + tail call), large functions `0x3a0`/`0x500`/`0x83c`/`0xaa0`. DllStatus `0x4184` (`f6280(); tail f310()`) matched but wasn't saved — a quick pickup.
 
+## 2026-10-15 swarm batch 28 (all `Style: natural`)
+
+- `DllField@0x8604` (0xc, 3/3): tail-calls an import veneer with `(this->field@0xa4, 0)`. `0x9ae8` (0x8, 2/2): returns 1. `0x142cc` (0x1c, 7/7): sets byte `this+0x25` = 1, `(this+0x20)->+0x1c` = 0, tail-calls a veneer with `(this->+4, 0)`. `0x142e8` (0x20, 8/8): same, sub-object byte set to 2.
+- `0x112c8`/`0x112dc`/`0x112f0` are **case bodies** of one switch function (`cmp r1,#0x21/#0x27/#0x3c` at `0x112a8`-`0x112bc`, shared `pop {r4,pc}` epilogue), not standalone functions; the enclosing switch is the real candidate.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
