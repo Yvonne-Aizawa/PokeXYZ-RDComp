@@ -103,6 +103,7 @@ Format per entry:
 - Tried: `f620` returning `void*`, int-cast zero, `p=0; o->buf14=p`, reading `p` before the VT2 store (22/27), vt2 held in a local (9/27).
 - Stuck on: 0x1dfac 25/27 — only diff: retail zeroes via `mov r1,#0; str r1,[r4,#20]`, ours `mov r0,#0; str r0,[r4,#20]`. 0x1df3c 20/28: same zero-register diff plus a `mov r4,r0` ordering diff (retail loads VT and sub before `mov r4,r0`).
 - Lead for next time: something keeps r0 live (or r1 free) across the zeroing store; try different inlined-helper shapes for the member release.
+- Update 2026-10-15 (dtor retry): with `extern char VT1[]/VT2[]` the natural form is 23/25 — only the zero-in-r1 diff remains (same as DllPuzzle@0xb3fc). 0x1df3c with a vt1 local is 20/28: retail loads VT1 into r2 and the member into r1 and delays `mov r4,r0`; a vt2 local spills to r5/r6 (8/28). Fixing the zero-in-r1 diff would likely unlock both.
 
 ## DllPhotoViewer@0x19cc (size 0x3c)
 
@@ -118,19 +119,13 @@ Format per entry:
 - Stuck on: best 4/24. Retail hoists constants 4 and 8 into registers (`mov r4,#4`, `mov r1,#8`) with a `push {r4,r5}` prologue; armcc folds the offsets into immediates every time.
 - Lead for next time: none yet.
 
-## DllTownmap@0x31d4 (size 0x38)
-
-- What it is: destructor — sets vtable, frees member `[0x14]` via a masked call, zeroes it, tail-calls.
-- Tried: two statement orderings.
-- Stuck on: 11/14. Retail loads the vtable pool word into r1 before the member load; both orderings put the member load first. Known-bad dtor shape.
-- Lead for next time: none yet.
-
 ## DllTownmap@0x31a0 (size 0x30)
 
 - What it is: constructor — stores `vt` at `[0]` and `vt+0x40` at `[0x74]`, calls `fa`, tail-calls `fb`.
 - Tried: several store and local-variable orderings.
 - Stuck on: 8/12. Retail does `add r1,r0,#64` before the first store with `mov r0,r4` between the two stores.
 - Lead for next time: none yet.
+- Update 2026-10-15: locals a=VT, b=a+0x40 in several orders hoist the pool load above `push` (5-6/12); plain form stays 8/12. Retail: `ldr r0,pool` after `mov r4,r0; add r1,r0,#64; str r0,[r4]; mov r0,r4; str r1,[r4,#116]`. Sibling dtor 0x31d4 now matches.
 
 ## DllPuzzle@0xb3fc (size 0x38; twin 0xbf80)
 
@@ -138,6 +133,7 @@ Format per entry:
 - Tried: plain C; local-variable `m` variant. Tail call (`void*` return) works.
 - Stuck on: 9/14. Retail interleaves `ldr r1,pool; ldr r0,[r0,#20]; str r1,[r4]` and zeroes through r1; armcc loads pool into r0, stores, then loads the member, `mov r0,#0`. Known-bad dtor member-load ordering. 0xbf80 differs only by using r0 for the zero.
 - Lead for next time: none yet.
+- Update 2026-10-15: twin 0xbf80 now MATCHES (trick ordering-local, `extern char VT[]`). 0xb3fc is 12/14 — only the 2-word zero-register diff (retail `mov r1,#0; str r1,[r4,#20]`, ours r0); tried an int member, `f1f8` returning `void*` with `(r&0)`, hoisted `z=0` (6/14), reusing the vt local as the zero (12/14). The same diff blocks DllBox 0x1dfac/0x1df3c.
 
 ## DllTownmap@0x1324 (size 0x38)
 
@@ -152,6 +148,7 @@ Format per entry:
 - Tried: 0x30a4 shape plus tail call to extern fc(r).
 - Stuck on: 21/26; only the first 5 words differ (ldr r1,pool hoisted above push, str r1,[r0] before mov r4,r0).
 - Lead for next time: none yet.
+- Update 2026-10-15: 16/27 with a vt local; retail has a post-link nop word at 0x308c so it can never be a pure masked match, and it loads the pool into r1 before `push`. Relaxed-only at best.
 
 ## DllBag@0x10e4 (size 0x6c)
 
@@ -174,6 +171,7 @@ Format per entry:
 - Stuck on: best 12/20. Retail loads the vtable pool word into r1 BEFORE `push {r4,lr}` and keeps it live with independent `add r0,r1,#16` / `add r2,r1,#32`; armcc loads it after `push` and chains the adds. Store order target `[12],[0],[32]`.
 - Lead for next time: three separate vtable externs (VT0/VT1/VT2 at +0/+16/+32 of one object) might force independent address materialisation — untried.
 - Update 2026-10-15 (batch 10): the three-separate-externs lead was **disproven** — VT0/VT1/VT2 scored 8/21 (worse; three independent pool loads, no shared base); single extern with `VT+16`/`VT+32` + `--relax-nops` stays at 12/20. Retail loads the pool into r1 before `push`; likely a different source construct (e.g. member-init in an inlined base dtor) — untried.
+- Update 2026-10-15: 0xa50 has a nop word at 0xa94 (between the two `bl`) — relaxed-only at best; 0xaac not re-disassembled.
 
 ## DllStatus@0x459c (size 0xb8)
 

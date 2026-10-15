@@ -1701,7 +1701,7 @@ Kinds (find them all with
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
 | `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790, DllHeading@0x868, 0x16f4, 0x8ac, 0x1738 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
-| `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848 |
+| `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848, DllPuzzle@0xbf80, DllTownmap@0x31d4, DllPhotoViewer@0x193c, DllStatus@0xa304 |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
 `volatile` / static functions / armcc extensions / literal-assigned locals /
@@ -2014,6 +2014,21 @@ Open DllHeading: the same two shapes also masked-match at `0x1ca8`/`0x3df0`/`0x8
 - `DllBattle@0x2ca28` (0x44, 17/17): `if (vt[0x98](o)) fa(o->x /*+0x12c*/, a)` with a `float` arg. `0x2d5d8` (0x44, 17/17): same shape. `0x393d8` (0x20, 8/8): `return vt[0x3e](o)->b5 != 0`. `0x2cdfc` (0x8, 2/2): tail call `fa(o->x /*+0x12c*/)`. `0x2cc34` (0xc, 3/3): `return vt[0x98](o)` (virtual tail call).
 - **Int-arg gated tail-calls don't match yet:** `0x2cbfc`, `0x2cdc4`, `0x2ce44` (and likely `0x2c630`, 0x50) stop at 12/14 — retail does `mov r5,r1; ldr r1,[r0,#0x98]; blx r1`, armcc emits `ldr r2 ... blx r2` whenever an int arg is live across the virtual call (float-arg siblings match since the arg is in s0). See `attempted.md`.
 - Scan caveat: the agent only scanned functions starting with `push {..., lr}` in `0x2c000`-`0x2e000` / `0x39000`-`0x3a000`; push-less leaf functions weren't scanned.
+
+## 2026-10-15 swarm batch 33 — the destructor recipe
+
+Retrying the "known-bad destructors" with two findings (array-declared vtable; a `void *vt = VT;` local forcing the pool load ahead of the member load) matched **6 of 12**. Recipe: `extern char VT[];` (never a scalar pointer), `void *vt = VT;` first, then the member load, `o->vptr = vt;`, free-if-non-null + zero, then tail-call or return `this`; verify at the size including the trailing literal-pool word.
+
+| Module | Offset (size, match) | Style |
+|---|---|---|
+| `DllPuzzle` | `0xbf80` (0x38, 14/14) | **trick(ordering-local)** — tail-call dtor |
+| `DllTownmap` | `0x31d4` (0x38, 14/14) | **trick(ordering-local)** |
+| `DllPhotoViewer` | `0x193c` (0x38, 14/14) | **trick(ordering-local)** |
+| | `0x1974` (0x34, 13/13) | natural — returns `this` via `pop {r4,pc}` |
+| `DllStatus` | `0xa304` (0x38, 14/14) | **trick(ordering-local)** |
+| | `0xa33c` (0x34, 13/13) | natural — returns `this` |
+
+Still failing (`attempted.md`): DllPuzzle@0xb3fc (12/14), DllBox@0x1dfac (23/25) and 0x1df3c (20/28) — all blocked by the zero-in-r1 diff (retail `mov r1,#0; str r1,[...]`, ours r0); DllTownmap@0x31a0 ctor wrapper (8/12); DllBattle@0x3038 and DllPokeList@0xa50 are relaxed-only at best (post-link nop words).
 
 ## What this does *not* do yet
 
