@@ -1730,6 +1730,7 @@ Kinds (find them all with
 | kind | what it is | files tagged |
 |---|---|---|
 | `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 10 (globals-init family, incl. DllSalon@0xdd0) |
+| `volatile` | arguments read through a `volatile int *` only so armcc keeps a full-word `ldr` followed by `uxth` / `and #255` (retail) instead of folding the narrowing into `ldrh` / `ldrb` — the GetMgr `uxth` id-check family | ~14 DllField GetMgr callers (e.g. 0x593cc, 0x59b04, 0x5c5d4) |
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
 | `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54, DllBattle@0x2b9dc, 0x75050, 0x74ff8, 0x750a4 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
@@ -2840,6 +2841,47 @@ Notes — **DllBattle `0x30000`-`0x60000` (`armcc-r6-b1`):** `0x520e4` returns t
 | `DllField` | `0xe7264` (0x54, 21/21) | natural | message forwarder to child at this+0x10: msg 28 -> vtable slot 0, msgs 34/60 -> slot 1, return 0; else return 1 |
 
 Notes — **DllField 0x50-0xa0 tier (`armcc-r6-f5`):** switch on the kind byte at `this+4` (0-3) returning an id, else the assert stub (`0xdc9f4`: 12/13/15/14; `0xe1598`: 16/17/19/18); `0x72574` is a 16-entry global-table lookup (index ≥ 16 asserts and clamps to 0, a null slot asserts); message forwarders that call a child's vtable slot and return 0, else 1 (`0xe701c` child @ +4, `0x151f4` @ +0x84, `0xe7264` @ +0x10, `0x1209c` @ +0x80 with `case 16: case 56:`, `0xe6eb4` @ +0xc); five byte-identical release stages at `0x412e4`, `0x41f38`, `0x42f90`, `0x43460`, `0x44504` (free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each); dtor stages `0x3954c`, `0x3a69c`, `0x3a960`, `0x3cdb4`, `0x39728` (**trick(ordering-local)**: `O *a = s->a; void *vt = VT; s->vt = vt;` fixes the member-load-before-vtable-pool-load shape — a previously known residue); `0x83ad0` release stage; `0x78cc4` scans 33 slots (stride 0x90) for a live entry whose key equals the arg — an `unsigned` counter is needed to get `bcc` instead of `blt`. A `switch` with `case 16: case 56:` reproduces a three-compare `cmp #16 / #22 / #56` chain (an `||` chain gives `cmpne`). Candidates containing a post-link `nop` word (e.g. the `0x11fa0`/`0x11ff0`/`0x12ccc`/`0x12d1c` destructor family) were skipped as relaxed-only.
+
+## 2026-10-16 round b — batch 5 (DllField GetMgr callers 0x50000-0x70000 x34)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x58cfc` (0x30, 12/12) | **trick(volatile)** | Script predicate: u16 b[1] checked through helper on manager +12 -> +28 -> +32; returns nonzero. |
+| `DllField` | `0x58d50` (0x2c, 11/11) | natural | Script handler: b[1] with (*(manager +12 -> +28)) + 0x3410 to a helper (tail call). |
+| `DllField` | `0x590fc` (0x30, 12/12) | **trick(volatile)** | Script handler: u16 b[1] with (*(manager +12 -> +28)) + 0x3410 to a helper (tail call). |
+| `DllField` | `0x5912c` (0x34, 13/13) | **trick(volatile)** | Script handler: u16 b[1] with (*(manager +12 -> +28)) + 0x3410 to a helper; returns 0. |
+| `DllField` | `0x59270` (0x38, 14/14) | **trick(volatile)** | Id check: u16 b[1] -> Q(H(manager +12 -> +72), id); on nonzero tail-calls a follow-up with Q's result. |
+| `DllField` | `0x592a8` (0x38, 14/14) | **trick(volatile)** | Id check: u16 b[1] -> Q(H(manager +12 -> +72), id); on nonzero tail-calls a follow-up with Q's result. |
+| `DllField` | `0x592e0` (0x38, 14/14) | **trick(volatile)** | Id check: u16 b[1] -> Q(H(manager +12 -> +72), id); on nonzero tail-calls a follow-up with Q's result. |
+| `DllField` | `0x593cc` (0x24, 9/9) | **trick(volatile)** | Script handler: u16 arg b[1] forwarded with the manager's +16 -> +4 object to a helper (tail call). |
+| `DllField` | `0x59848` (0x40, 16/16) | **trick(volatile)** | Script handler: u16 id checked via Q(H(manager +12 -> +72), id); returns 9 if not found else V(r). |
+| `DllField` | `0x59b04` (0x24, 9/9) | **trick(volatile)** | Same as 0x593cc with a different tail helper. |
+| `DllField` | `0x59cb4` (0x34, 13/13) | **trick(volatile)** | Script handler: u16 b[1] with (*(manager +12 -> +28)) + 0x3410 to a helper; returns 0. |
+| `DllField` | `0x59d7c` (0x3c, 15/15) | **trick(volatile)** | Script handler: u16 id checked via Q(H(manager +12 -> +72), id); returns -1 if not found else tail-calls Tail(r). |
+| `DllField` | `0x5a380` (0x30, 12/12) | **trick(volatile)** | Script handler: u8 b[1] with (*(manager +12 -> +28)) + 0xee8 to a helper; returns 0. |
+| `DllField` | `0x5a6b4` (0x4c, 19/19) | **trick(volatile)** | Same id check; on success returns Tail(r), else Other(0,0,0) and returns 0. |
+| `DllField` | `0x5b758` (0x28, 10/10) | **trick(volatile)** | Script handler: u8 arg b[1] forwarded with the manager's +12 -> +28 -> +20 object to a helper (tail call). |
+| `DllField` | `0x5bd84` (0x2c, 11/11) | natural | Calls E(*m + 0x1058, m[52]) with m = manager +12 -> +28; returns 0. |
+| `DllField` | `0x5c1ac` (0x38, 14/14) | natural | Script handler: b[1] != 0 flag with (*(manager +12 -> +28)) + 0x14444 to a helper; returns 0. |
+| `DllField` | `0x5c490` (0x2c, 11/11) | **trick(volatile)** | Script handler: u16 arg b[1] and (*(manager +12 -> +28)) + 724 to a helper (tail call). |
+| `DllField` | `0x5c580` (0x24, 9/9) | natural | Script handler: forwards b[1], b[2] with manager +12 -> +28 to a helper (tail call; retail loads the pair with ldm). |
+| `DllField` | `0x5c5d4` (0x1c, 7/7) | **trick(volatile)** | Script handler: u8 arg b[1] forwarded with the manager pointer to a helper (tail call). |
+| `DllField` | `0x5c9fc` (0x28, 10/10) | natural | Getter: manager +12 -> +72 -> +240 object's first byte == 4. |
+| `DllField` | `0x5d0f0` (0x40, 16/16) | natural | Script handler: b[0] split into hi/lo halfwords; if R(manager +12 -> +72 -> +360, hi, lo) succeeds calls Z(result, b[1]); returns 0. |
+| `DllField` | `0x5d45c` (0x3c, 15/15) | natural | Script handler: b[1] split into hi/lo halfwords; if R(manager +12 -> +72 -> +360, hi, lo) succeeds calls a follow-up; returns 0. |
+| `DllField` | `0x5d4dc` (0x28, 10/10) | natural | Getter: manager +12 -> +72 -> +240 object's byte at +16 == 0. |
+| `DllField` | `0x5d698` (0x38, 14/14) | **trick(volatile)** | Id check: u16 b[1] -> Q(H(manager +12 -> +72), id); on nonzero tail-calls a follow-up with Q's result. |
+| `DllField` | `0x5d910` (0x3c, 15/15) | natural | Script handler: b[1] split into hi/lo halfwords; if R(manager +12 -> +72 -> +360, hi, lo) succeeds calls a follow-up; returns 0. |
+| `DllField` | `0x5db64` (0x34, 13/13) | natural | Script handler: b[1] != 0 flag with manager +12 -> +28 -> +380 object to a helper; returns 0. |
+| `DllField` | `0x5e068` (0x30, 12/12) | **trick(volatile)** | Script handler: b[1]&255 with (*(manager +12 -> +28)) + 0x1b814 to a helper (tail call). |
+| `DllField` | `0x5e278` (0x38, 14/14) | **trick(volatile)** | Script handler: if helper(u16 b[1]) succeeds, calls a second helper with manager +12 -> +28 and the id; returns 0. |
+| `DllField` | `0x5e2b0` (0x2c, 11/11) | natural | Calls H(m[400], *m + 0x13148) with m = manager +12 -> +28; returns 0. |
+| `DllField` | `0x5e534` (0x38, 14/14) | **trick(volatile)** | Script handler: u16 b[1] -> virtual call (vtable slot 7) on the object at (*(manager +12 -> +28)) + 0x190c4. |
+| `DllField` | `0x5ed88` (0x20, 8/8) | natural | Chain of three helper calls on the manager's +12 object: C(B(A(m), 0)) (last is a tail call). |
+| `DllField` | `0x5eda8` (0x24, 9/9) | natural | Script handler: forwards word b[1] with manager +12 -> +28 -> +36 object to a helper (tail call). |
+| `DllField` | `0x5edcc` (0x3c, 15/15) | **trick(volatile)** | Script handler: u16 id checked via Q(H(manager +12 -> +72), id); returns 1 if not found else tail-calls Tail(r). |
+
+Notes — **DllField GetMgr callers, `0x50000`-`0x70000` (`armcc-r6-f1`, 34 matches):** `uxth` id-check family (`0x59270`, `0x592a8`, `0x592e0`, `0x5d698` 14/14 each; `0x5a6b4` 19/19 — returns `Tail(r)` or calls `Other(0,0,0)` and returns 0); the same shape with `uxth` / `and #255` narrowing, which needs a **volatile** read of `b` (`trick(volatile)`): `0x593cc`, `0x59b04`, `0x5c5d4`, `0x5b758`, `0x5c490`, `0x58cfc`, `0x590fc`, `0x5912c`, `0x59cb4`, `0x5a380`, `0x5e068`, `0x5e278`, `0x5e534` (vtable slot 7), `0x5eda8`; id-check variants `0x59d7c` / `0x5edcc` (return -1 and 1 when not found), `0x59848` (returns 9); hi/lo halfword split of `b[1]` (natural: `0x5d45c`, `0x5d910`, `0x5d0f0`); natural chain getters / handlers (`0x5c9fc`, `0x5d4dc`, `0x5ed88`, `0x5bd84`, `0x5e2b0`, `0x5c580`, `0x58d50`, `0x5db64`, `0x5c1ac`). **Mechanism:** a plain access gives `ldrh`/`ldrb`; reading through a `volatile int *` gives retail's `ldr` followed by `uxth` / `and`. Plain two-word `b[1], b[2]` already gives the retail `ldm` pair load (`0x5c580`). Unmatched: the `ldrd r0,[r1,#4]` pair family (never emitted by long-long / `__packed` / struct-pair loads), `0x5e098`/`0x5e030`, `0x588b0`/`0x5cfc8` (narrowing hoisted earlier than retail), `0x5aa34`, `0x5bb78` (`r != -1` compiles to `adds`, retail uses `cmn` / `moveq` / `movne`). Not tried: jump-table dispatchers, `vldr` getters, 18-28-word bodies (`0x5bdf4`..), `0x5c938` / `0x5d204`.
 
 ## What this does *not* do yet
 
