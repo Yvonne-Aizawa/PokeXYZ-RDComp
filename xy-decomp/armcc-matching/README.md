@@ -2505,6 +2505,45 @@ Notes — **DllBattle `0x60000`-`0x78000` (`armcc-r3-b1`):** all three are **tri
 
 Notes — the 13 listed siblings of the `0x8b2e8` family all match (`pad[]` / member offset 216-280, 10/10 at 0x28); `0x9b87c` (0x24, 9/9) is the same shape with no second argument (`if (o->m) { fa(o->m); fb(0); }`, member +224). A scan of the whole DllBattle `.text` for the exact masked pattern found 19 sites, all now matched.
 
+## 2026-10-16 round a — batch 13 (DllBattle comparison-wrapper family x32, all natural)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0xa5db4` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 2048) (tail call, no return value) |
+| `DllBattle` | `0xa7fd4` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 6144) (tail call, no return value) |
+| `DllBattle` | `0xa8000` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportB(17, 0) (tail call, no return value) |
+| `DllBattle` | `0xa802c` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 2048) (tail call, no return value) |
+| `DllBattle` | `0xaa524` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xab0d4` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 2048) (tail call, no return value) |
+| `DllBattle` | `0xab168` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 2048) (tail call, no return value) |
+| `DllBattle` | `0xab408` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportB(66, 1) (tail call, no return value) |
+| `DllBattle` | `0xaf540` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xb2e8c` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(56, 20) (tail call, no return value) |
+| `DllBattle` | `0xb4cdc` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(23, 2) (tail call, no return value) |
+| `DllBattle` | `0xb5414` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(56, 40) (tail call, no return value) |
+| `DllBattle` | `0xb7850` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportA(50, 6144) (tail call, no return value) |
+| `DllBattle` | `0xb8340` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(84, 1) (tail call, no return value) |
+| `DllBattle` | `0xb8b58` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xb9b44` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xb9cb0` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(80, 0) (tail call, no return value) |
+| `DllBattle` | `0xb9d64` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(67, 0) (tail call, no return value) |
+| `DllBattle` | `0xb9d90` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xb9de8` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xba544` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(76, 1) (tail call, no return value) |
+| `DllBattle` | `0xba7f8` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(67, 1) (tail call, no return value) |
+| `DllBattle` | `0xba824` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportB(76, 1) (tail call, no return value) |
+| `DllBattle` | `0xbb87c` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xbbccc` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(66, 1) (tail call, no return value) |
+| `DllBattle` | `0xbbdf4` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xbd6b4` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportB(17, 0) (tail call, no return value) |
+| `DllBattle` | `0xbe4ec` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(66, 1) (tail call, no return value) |
+| `DllBattle` | `0xbf8cc` (0x2c, 11/11) | natural | guarded report helper: if (getter(3) == c) reportB(83, 1) (tail call, no return value) |
+| `DllBattle` | `0xbfde4` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 8192) (tail call, no return value) |
+| `DllBattle` | `0xbfed8` (0x2c, 11/11) | natural | guarded report helper: if (getter(2) == c) reportA(54, 2048) (tail call, no return value) |
+| `DllBattle` | `0xbff04` (0x2c, 11/11) | natural | guarded report helper: if (getter(4) == c) reportB(83, 0) (tail call, no return value) |
+
+Notes — **DllBattle comparison-wrapper family (32 sites, all size 0x2c, 11/11):** `void fn(int a,int b,int c){ if (g(N) == c) fnX(A, B); }` where `g` is the `0x6b91c` getter (argument N = 2, 3 or 4) and `fnX` is the `0x4ce84` veneer when `B` is `0x800`/`0x1800`/`0x2000`, else `0x658d4`; only `N`, `A`, `B` change. Getter 2: `0xa5db4`, `0xa7fd4`, `0xa8000`, `0xa802c`, `0xaa524`, `0xab0d4`, `0xab168`, `0xab408`, `0xba824`, `0xbd6b4`, `0xbfde4`, `0xbfed8`. Getter 3: `0xaf540`, `0xb2e8c`, `0xb4cdc`, `0xb5414`, `0xb7850`, `0xb8340`, `0xb8b58`, `0xb9b44`, `0xb9cb0`, `0xb9d64`, `0xb9d90`, `0xb9de8`, `0xba544`, `0xba7f8`, `0xbb87c`, `0xbbccc`, `0xbbdf4`, `0xbe4ec`, `0xbf8cc`. Getter 4: `0xbff04`. Of 480 candidates, only this shape was a mechanical family. Leads not attempted: `mov r4,r0; ldr r0,[r0,#off]; bl 0x19f4; mov r0,r4; pop` (`0x902c8`, `0x97688`, `0x99d44`, `0x9b5e8`, `0x9c2f4`; dtor-like), the same getter shape with `cmp r0,#K` against a constant and `mov r0,#22` as the getter argument in `0xa5de0`..`0xa92b0` (`push {r4-r6,lr}`).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
