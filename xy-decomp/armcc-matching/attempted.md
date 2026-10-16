@@ -15,6 +15,55 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle 0xbd2dc (round b, event-trigger sweep 0xb8000-0xca000)
+
+Module: DllBattle
+Offset: 0xbd2dc
+Size: 0x60
+Match: 15/24
+
+`if (g(3) == c) { v = (ushort)g(18); if (h(v, 30) != 0 || v == 26 || v == 136) post(50, K); }` -- retail does `cmp r4,#26; beq T; cmp r4,#136; bne end` with T the shared tail-call block; armcc fuses to `cmpne r4,#136; bne` and orders the tail call differently. Tried negated early return, if/else with a duplicated post call, `||` forms. The retail layout suggests the post call is reachable from two separate branches.
+
+## DllBattle 0xc4f60 (round b, event-trigger sweep 0xb8000-0xca000)
+
+Module: DllBattle
+Offset: 0xc4f60
+Size: 0x44
+Match: 15/17
+
+`if (g(3) == c && (ushort)g(18) == 505) post(54, 3072)`: retail compares via `sub r1,r0,#256; subs r1,r1,#249; bne` (two-step subtract), armcc emits `mvn r1,#504; cmn r0,r1`. Tried `- 256 - 249 == 0`, `- 256 == 249`, `g(18) - 505 == 0`. The retail split suggests the constant is built as 256 + 249 (macro/enum arithmetic); source form unknown.
+
+## DllBattle event-trigger predicates that save BOTH b (r1) and c (r2) -- ~213 functions in 0xb8000-0xca000 (e.g. 0xb8d3c, 0xb8008, 0xb8048, 0xb9c70, 0xbfc9c, 0xc06c8, 0xbca9c) (round b, event-trigger sweep 0xb8000-0xca000)
+
+Module: DllBattle
+Offset: 0xb8d3c (representative; full list = every unmatched 0x6b91c caller in range whose prologue has `mov rN, r1`)
+Size: 0x40
+Match: 14/16
+
+Shape (0xb8d3c): `if (g(3) == c && h1(b) == 1) post(44, 50)` -- retail prologue is `push {r4,r5,r6,lr}; mov r5,r1; mov r4,r2` (b first), armcc here emits `mov r4,r2; mov r5,r1`. Body otherwise identical (14/16, only the two prologue words differ). Same residue already logged in attempted.md for 0xa7cd0/0xa7188/0xc1244; this confirms it covers ~213 more functions here (the largest unmatched cluster in the range).
+
+Tried (all the same 14/16): plain `&&` form, nested ifs, `(void)b;` first, `int bb = b; int cc = c;` locals in both orders, swapping the parameter order/names, calling h1(b) first. No natural form found.
+
+Observation: the move order is NOT simply allocation order. Retail (b,c) emits r1-first; (d,c) = 0xc489c emits r3-first (matched, natural); (c,d) = 0xbc89c/0xbe5b8/0xbef24/0xc282c/0xc3cd0 emit r2-first while armcc here emits r3-first. So the (c,d) and (b,c) shapes both need the opposite order from what we produce; a single missing source-level fact (a 4th arg, an intermediate struct/vtable local) might explain both.
+
+## DllBattle event predicates saving c (r2) then d (r3) in that order -- 0xbc89c 0xbe5b8 0xbef24 0xc282c 0xc18d8 0xc3cd0 0xc44ac 0xc1ff8 (round b, event-trigger sweep 0xb8000-0xca000)
+
+Module: DllBattle
+Offset: 0xc282c (representative)
+Size: 0x24
+Match: 7/9
+
+`if (g(2) == c) *d = 0;` -- body correct, retail prologue is `mov r4,r2; mov r5,r3`, armcc emits `mov r5,r3; mov r4,r2`. Other members: 0xbc89c `if (g(2)==c && g(83)==0) *d = post(83,1)` (14/16), 0xc3cd0 `if (g(2)==c && d[3]) post(54,2048)` (13/15). Tried d as short*/char*, early-return form, local alias of d. Same family as the b+c residue (attempted-DllBattle-bc-saved-family.md); armcc's d-first order is what the natural source gives for the matched 0xc489c / 0xc1e40 / 0xbf0b0 shapes.
+
+## DllBattle nop-relaxed (round b, event-trigger sweep 0xb8000-0xca000)
+
+Module: DllBattle
+Offset: 0xc2a58 (siblings 0xc2afc 0xc2b88 0xc4b58 0xc556c; also 0xc23f4, 0xbce68/0xc1cb8/0xc4618 two-block variants)
+Size: 0x54
+Match: relaxed-only
+
+`if (g(4)==c && (ushort)g(30) != K) post(66,1) else *d = 0`-style predicates whose retail bytes carry the post-link branch-relaxation `nop nop` pair before the final `b`. Only matchable with --relax-nops, which does not count as a masked match, so none were saved.
+
 ## DllField@0x90c00 (size 0x54) -- volatile-load retry, 2026-10-16
 
 - What it is: handler `(self, args)`: `o = self->+68; GetMgr(); s = (s16)args[2]; id = (u16)args[1]; tab = o->+144; x = mgr->+12->+72; r = (s == -1) ? tab->+16 : Q(G(x), s); if (r) T(r, id & 255); return 0`.

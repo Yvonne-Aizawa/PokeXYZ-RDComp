@@ -3089,6 +3089,69 @@ Notes — **DllBattle event-trigger predicates, `0xa5000`-`0xb8000` (`armcc-r8-e
 
 Notes — **Width-narrowing class retried with the volatile lever (`armcc-r8-width`, 22 matches, all `trick(volatile-load)`):** `0x93d10`, `0x948f0`, `0x93b30`, `0x94d18`, `0x9515c`, `0x928f0`, `0x97ee4`, `0x916a8`, `0x922bc`, `0x93cac`, `0x92d34`, `0x91330`, `0x90b24`, `0x97a74`, `0x95df0`, `0x928ac`, `0x94894`, `0x9484c`, `0x58ba0`, `0x58bc0`, `0x588b0`, `0x5cfc8`. What the lever needed beyond `volatile int *b`: read `int t = b[1]` and narrow in the call (e.g. `(signed char)t`); for the `this`/`args` handlers (`0x928ac`, `0x94894`, `0x9484c`) put the volatile read AFTER the `GetMgr()` call and declare the locals first; `0x9484c` also needs a local `unsigned short *p = (unsigned short *)(tab + i*12 + 336)` to keep retail's `add #336; ldrh [r0]` — **that local-pointer trick may also fix the large-offset byte/halfword folding residue (`0x93cec`, `0x92e28`, `0x94cb8`)**; `0x588b0` / `0x5cfc8` set `r1` late, after the pointer chain — making the last chain load(s) `*(char *volatile *)` pins that order (`0x588b0` needs the last two volatile, `0x5cfc8` only the final one); `0x948f0` uses a `struct E{int f[7];}` array (`e[i].f[5]`) for the `ldr [r0,#20]` form. Still stuck: `0x90c00` (19/21; callee-saved `o`/`id` swap r5/r6), `0x92424` (11/22; retail copies the call result with `movs r5,r0`), and the `ldm` / `ldrd` / pre-index-writeback group (`0x9aa14`, `0x9ad24`, `0xa0290`, `0x923f0`, `0x5e098`, `0x5e030`, `0x5aa34`) — volatile gives separate `ldr`s, a plain struct or `long long` read folds the narrowing back into `ldrb`.
 
+## 2026-10-16 round b — batch 12 (DllBattle event-trigger predicates 0xb8000-0xc5000 x56)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0xb8318` (0x28, 10/10) | natural | if (g(2) == 31) post(a) (tail call; forwards the incoming first arg, r1 left untouched). |
+| `DllBattle` | `0xb86e4` (0x30, 12/12) | natural | if (g(3) == *d) post(50, 6144) (tail call); compares the query with the word at d. |
+| `DllBattle` | `0xb8714` (0x3c, 15/15) | natural | if (g(3) == c && g(34) == 4) post(67, 0) (tail call, no return value). |
+| `DllBattle` | `0xb8c84` (0x40, 16/16) | natural | if (g(2) == c && (uchar)g(35) == 2) post(66, 1) (tail call). |
+| `DllBattle` | `0xb97c0` (0x3c, 15/15) | natural | if (g(3) == c && g(34) == 3) post(67, 0) (tail call, no return value). |
+| `DllBattle` | `0xb9b08` (0x3c, 15/15) | natural | if (g(3) == c && g(34) == 4) post(67, 0) (tail call, no return value). |
+| `DllBattle` | `0xb9d28` (0x3c, 15/15) | natural | if (g(3) == c && g(34) == 3) post(67, 0) (tail call, no return value). |
+| `DllBattle` | `0xbbcf8` (0x3c, 15/15) | natural | if (g(3) == c && g(22) == 4) post(57, 7) (tail call, no return value). |
+| `DllBattle` | `0xbc238` (0x28, 10/10) | natural | if (g(a) == 12) post(50, 1352) (tail call); query id comes from the incoming arg. |
+| `DllBattle` | `0xbc264` (0x28, 10/10) | natural | if (g(a) == 9) post(50, 1352) (tail call); query id comes from the incoming arg. |
+| `DllBattle` | `0xbc29c` (0x24, 9/9) | natural | if (g(a) == 0) post(22, 12) (tail call); query id comes from the incoming arg. |
+| `DllBattle` | `0xbc3a8` (0x18, 6/6) | natural | post(62, g(a) + 1) (tail call): bumps the queried value by one. |
+| `DllBattle` | `0xbc65c` (0x24, 9/9) | natural | if (g(a) == 4) post(76, 1) (tail call). |
+| `DllBattle` | `0xbd17c` (0x38, 14/14) | natural | if (g(3) == c) post(45, (uchar)(g(45) + 1)) (tail call): bumps query 45 by one. |
+| `DllBattle` | `0xbd260` (0x3c, 15/15) | natural | if (g(3) == c && g(70) != 0) post(54, 6144) (tail call, no return value). |
+| `DllBattle` | `0xbd42c` (0x34, 13/13) | natural | if (g(2) == c) post(33, g(33) << 1) (tail call): doubles query 33. |
+| `DllBattle` | `0xbd678` (0x3c, 15/15) | natural | if (g(3) == c && (uchar)g(38) == 0) post(39, 10) (tail call). |
+| `DllBattle` | `0xbd7cc` (0x30, 12/12) | natural | if (g(3) == c) post(54, 5325) (tail call). |
+| `DllBattle` | `0xbd7fc` (0x3c, 15/15) | natural | if (g(4) == c && g(27) == 1) post(54, 8192) (tail call, no return value). |
+| `DllBattle` | `0xbdd94` (0x38, 14/14) | natural | if (h2((uchar)g(2), c) != 0) post(83, 1) (tail call); h2 is the 0x4c5a8 predicate. |
+| `DllBattle` | `0xbddcc` (0x7c, 31/31) | natural | if (g(3) == c && g(42) == 1 && g(78) == 0 && !h1((ushort)g(18)) && !h2(v, 1)) post(43, 2) (tail call); h1 = 0xa4814, h2 = 0x49c. |
+| `DllBattle` | `0xbe190` (0x4c, 19/19) | natural | if (g(a) == 16 && probe(88, 1) != 0) post(50, g(87) == 0 ? 5448 : 3072) (tail call). |
+| `DllBattle` | `0xbe2c0` (0x3c, 15/15) | natural | if (h2(c, (uchar)g(3)) != 0) post(54, 4506) (tail call); h2 is the 0x4c5a8 predicate. |
+| `DllBattle` | `0xbe2fc` (0x44, 17/17) | natural | if (g(4) == c && h((unsigned char)g(57)) == 2) post(54, 3072) (tail call, no return value); h is an 0x9e58c lookup helper. |
+| `DllBattle` | `0xbf010` (0x44, 17/17) | natural | if (g(4) == c && ((uchar)g(22) == 14 \|\| == 9)) post(54, 2048) (tail call). |
+| `DllBattle` | `0xbf064` (0x4c, 19/19) | natural | if (g(a) == 17 && probe(88, 1) != 0) post(50, g(87) == 0 ? 5448 : 3072) (tail call). |
+| `DllBattle` | `0xbf0b0` (0x4c, 19/19) | **trick(redundant-local)** | *d = 0; if (g(2) == c && g(22) == 0) *d = post(22, 17) (stores the veneer's result through d). |
+| `DllBattle` | `0xbf0fc` (0x4c, 19/19) | **trick(redundant-local)** | *d = 0; if (g(2) == c && g(22) == 0) *d = post(22, 14) (stores the veneer's result through d). |
+| `DllBattle` | `0xbf148` (0x44, 17/17) | natural | if (g(3) == c && h1((ushort)g(18)) != 0) post(50, 6144) (tail call); h1 = 0xa4714. |
+| `DllBattle` | `0xbf300` (0x44, 17/17) | natural | if (g(3) == c && h((unsigned char)g(57)) == 3) post(54, 8192) (tail call, no return value); h is an 0x9e58c lookup helper. |
+| `DllBattle` | `0xbf344` (0x4c, 19/19) | natural | if (g(3) == c && h2((ushort)g(18), 0) != 0) post(50, 5325) (tail call); h2 = 0x49c. |
+| `DllBattle` | `0xbf554` (0x3c, 15/15) | natural | if (g(3) == c && g(21) == 7) post(76, 1) (tail call, no return value). |
+| `DllBattle` | `0xc021c` (0x3c, 15/15) | natural | if (g(3) == c && (unsigned)g(49) <= 60) post(50, 6144) (tail call). |
+| `DllBattle` | `0xc0258` (0x44, 17/17) | natural | if (g(3) == c && h1((ushort)g(18)) == 1) post(54, 8192) (tail call). |
+| `DllBattle` | `0xc0764` (0x4c, 19/19) | natural | if (g(4) == c && g(27) == 0 && (unsigned)g(44) > 50) post(44, 50) (tail call). |
+| `DllBattle` | `0xc07e8` (0x40, 16/16) | natural | v = (uchar)g(4); if (v != c && h2(c, v)) post(54, 3072) (tail call); h2 is the 0x4c5a8 predicate. |
+| `DllBattle` | `0xc08b8` (0x3c, 15/15) | natural | if (g(4) == c && g(3) != c) post(66, 1) (tail call). |
+| `DllBattle` | `0xc08f4` (0x4c, 19/19) | natural | if (g(4) == c && g(3) != c && g(30) != 8) post(66, 1) (tail call). |
+| `DllBattle` | `0xc0a24` (0x50, 20/20) | natural | if (g(3) == c && g(22) == 2 && *d != 0) post(50, 5325) (tail call, no return value); *d is a once-flag word. |
+| `DllBattle` | `0xc0a74` (0x3c, 15/15) | natural | if (g(2) == c && g(69) != 0) post(54, 8192) (tail call, no return value). |
+| `DllBattle` | `0xc12d4` (0x4c, 19/19) | natural | if (g(3) == c && h2((ushort)g(18), 7) != 0) post(50, 4915) (tail call); h2 = 0x49c. |
+| `DllBattle` | `0xc15a8` (0x50, 20/20) | natural | if (g(3) == c && g(22) == 17 && *d != 0) post(50, 5325) (tail call, no return value); *d is a once-flag word. |
+| `DllBattle` | `0xc15f8` (0x50, 20/20) | natural | if (g(3) == c && g(22) == 14 && *d != 0) post(50, 5325) (tail call, no return value); *d is a once-flag word. |
+| `DllBattle` | `0xc1728` (0x4c, 19/19) | natural | if (g(3) == c && h1((ushort)g(18)) == 0) post(25, g(25) + 1) (tail call). |
+| `DllBattle` | `0xc1e40` (0x60, 24/24) | natural | if (g(2) == c && g(3) != c && g(32) == 2 && g(33) < 0) *d = post(66, 1) (stores the veneer's result through d). |
+| `DllBattle` | `0xc297c` (0x44, 17/17) | natural | if (g(3) == c && g(22) == 2) post(25, g(25) + 1) (tail call). |
+| `DllBattle` | `0xc2bdc` (0x60, 24/24) | natural | if (g(2) == c && g(3) != c && g(32) == 6 && g(33) < 0) *d = post(66, 1) (stores the veneer's result through d). |
+| `DllBattle` | `0xc368c` (0x3c, 15/15) | natural | if (g(2) == c && g(51) > 0) post(66, 1) (tail call). |
+| `DllBattle` | `0xc3ab8` (0x48, 18/18) | natural | if (g(3) == c && h1((ushort)g(18)) == 1) post(54, 3277) (tail call); h1 = 0x7dc. |
+| `DllBattle` | `0xc3d90` (0x38, 14/14) | natural | if (h2(c, (uchar)g(2)) != 0) post(66, 1) (tail call); h2 is the 0x4c5a8 predicate. |
+| `DllBattle` | `0xc3e88` (0x44, 17/17) | natural | if (g(3) == c && h1((ushort)g(18)) != 0) post(73, 1) (tail call); h1 = 0x4a890. |
+| `DllBattle` | `0xc4244` (0x3c, 15/15) | natural | if (g(4) == c && g(22) == 9) post(50, 5120) (tail call, no return value). |
+| `DllBattle` | `0xc4584` (0x4c, 19/19) | natural | if (g(2) == c && g(51) > 0 && g(58) == 4) post(66, 1) (tail call). |
+| `DllBattle` | `0xc4708` (0x48, 18/18) | natural | if (g(3) == c && h1((ushort)g(18)) != 0) post(50, 5325) (tail call); h1 = 0x4a890. |
+| `DllBattle` | `0xc4750` (0x4c, 19/19) | natural | if (g(2) == c && g(51) > 0 && g(58) == 3) post(66, 1) (tail call). |
+| `DllBattle` | `0xc5178` (0x44, 17/17) | natural | if (g(3) == c && h1((ushort)g(18)) != 0) post(66, 1) (tail call). |
+
+Notes — **DllBattle event-trigger predicates, `0xb8000`-`0xc5000` (`armcc-r8-ev3`, 56 matches; `g` = the `bl 0x6b91c` query):** `g(A)==c && g(B) op K` → post tail call (`0xb8714`, `0xb97c0`, `0xb9b08`, `0xb9d28`, `0xbbcf8`, `0xbd260`, `0xbd7fc`, `0xbf554`, `0xc0a74`, `0xc4244`); two-query variants with extra constants (`0xc08b8`, `0xc08f4`, `0xc368c`, `0xc4584`, `0xc4750`, `0xc021c`, `0xc0764`, `0xc297c`, `0xb8c84`, `0xbd17c`, `0xbd42c`, `0xbd678`, `0xbd7cc`, `0xbf010`); helper-call forms `h((ushort)g(18))` etc. (`0xbe2fc`, `0xbf300`, `0xc0258`, `0xc1728`, `0xc5178`, `0xbdd94`, `0xbe2c0`, `0xc3d90`, `0xc07e8`, `0xbf148`, `0xc12d4`, `0xbf344`, `0xc3ab8`, `0xc4708`, `0xc3e88`, `0xbddcc`); no-arg-saved forms (`0xb8318`, `0xb86e4`, `0xbc238`, `0xbc264`, `0xbc29c`, `0xbc3a8`, `0xbc65c`, `0xbe190`, `0xbf064`); `*d != 0` flag-word forms (`0xc0a24`, `0xc15a8`, `0xc15f8`); `*d = post(...)` store forms (the `0xc489c` shape: `0xc1e40`, `0xc2bdc`, `0xbf0b0`, `0xbf0fc`; the last two are **trick(redundant-local)** — a named local holds the post-event arg in r6). **Stuck (see `attempted.md`):** the b+c-saved family (~213 functions, the bulk of the range; 14/16 on `0xb8d3c` — the prologue-move swap; move order isn't simply allocation order across the (b,c), (d,c) and (c,d) shapes), the (c,d)-order family (`0xbc89c`, `0xbe5b8`, `0xbef24`, `0xc282c`, `0xc18d8`, `0xc3cd0`, `0xc44ac`, `0xc1ff8`), `0xbd2dc` (15/24; armcc fuses the compares into `cmpne` where retail branches twice), `0xc4f60` (15/17; retail `sub #256` then `subs #249`, armcc `mvn/cmn`), and a relaxed-only nop family (`0xc2a58`, `0xc2afc`, `0xc2b88`, `0xc4b58`, `0xc556c`, `0xc23f4`; not saved).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
