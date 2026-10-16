@@ -2278,6 +2278,22 @@ Notes:
 - **DllField `0x5aa14`** needs a sub-struct at +288 `{int; u16}` — a flat +292 offset makes armcc emit `add #256` plus `ldrh #36`. **Bit-pack builders** `0x797b0` / `0x704ac` need named mask locals `m1`, `m2` plus a separate `v |= tag` statement (retail loads both mask constants before the shifts); tagged `trick(redundant-local)`.
 - **DllField open:** ~70 candidates at 0x1c-0x2c bytes in `0x40000`-`0x90000`; not yet tried: `0x4a478`, `0x543b4`, `0x547a8`, `0x552b0`, `0x552d0`, `0x552f0`, `0x55310`, `0x58ba0` (`0x4368c`/`0x44f6c` are `push {r4,lr}; bl; pop {r4,lr}; b` tail-call shapes, skipped).
 
+## 2026-10-16 round a — batch 4 (DllBattle 0x30000 range, DllField 0x90000+)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x3f444` (0x28, 10/10) | natural | teardown stage: if member at +0x840 non-null, fnB(fnA(member)); then clear member |
+| `DllBattle` | `0x4af00` (0x30, 12/12) | natural | range-check assert (x>=2 -> fnA(0,0,0)) then return x==0 |
+| `DllBattle` | `0x4c948` (0x24, 9/9) | natural | tail-call fnB(this, fnA(this+0x437c)) |
+| `DllBattle` | `0x4d2f4` (0x24, 9/9) | natural | r = fnB(fnA(this,14), p); returns r, or 1 if r==0 |
+| `DllField` | `0xc2b64` (0x20, 8/8) | natural | this->[152] non-null && import() != 0 bool getter (null returns the 0 loaded) |
+| `DllField` | `0xc74c4` (0x28, 10/10) | natural | if import check(this) true: clear words +164/+168, return byte +188; else 0 |
+| `DllField` | `0xcac98` (0x28, 10/10) | natural | sibling of 0xc74c4 -- if import check(this) true: clear words +164/+168, return byte +188; else 0 |
+| `DllField` | `0xe1208` (0x1c, 7/7) | natural | calls a void import, then returns (import() == 3) |
+| `DllField` | `0xe4588` (0x20, 8/8) | natural | returns (import(this->[8]->[20]) < 6) as an unsigned compare |
+
+Notes: DllBattle `0x30000`-`0x60000` has ~55 more candidates (0x14-0x60 bytes); the six attempts below are logged in `attempted.md`. DllField `0x90000`+ skipped `0xca330`/`0xca494` (save r4-r8, body looks like the `0xc74c4` shape) and `0xe2160` (zero lands in r2 instead of r1). **Two high-value unmatched families:** `DllField@0xde620` (~11 byte-identical sites) and `DllField@0xb1bb8` (24 byte-identical sites) — see `attempted.md`.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction

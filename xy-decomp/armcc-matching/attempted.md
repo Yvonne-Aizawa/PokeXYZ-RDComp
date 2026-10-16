@@ -15,6 +15,28 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle small push-functions, 0x30000-0x60000 sweep (unmatched)
+
+- 0x422e8 (0x24): `fnA(o->m@0xafc); o->y@0x876 = 0; o->x@0x874 = 1`. Retail `mov r1,#0; mov r0,#1; strb r1; strb r0` (zero in r1); ours reuses r0 — zero-register residue. Tried store orders / duplicate store.
+- 0x4bb2c (0x30): `if (i >= 5) fnA(0,0,0); return o->v[i]` (u8 at +365+i). Only diff: prologue `mov r5,r0; mov r4,r1` vs ours `mov r4,r1; mov r5,r0` (10/12). Tried struct array and flat pointer index.
+- 0x4cf8c (0x34): `if (i >= 7) fnA(0,0,0); o->v[i] = val` (int array at +28). Callee-saved assignment swapped (9/13) — val/o swap r5/r6.
+- 0x4d318 (0x30): `return fnA(o,13) == fnA(o,14)`; o lands in r5 / first result r4 (ours) vs r4/r5 (retail), 8/12. Tried temporaries and an if-form.
+- 0x48344 (0x38): `if (vt[38](this)) fnA(this->m@0xb8, v); this->b@0x4e = v;` 12/14 — retail loads the vfn into r1, ours r2; tried prototyped / unprototyped vt and a local fn ptr.
+- 0x4344c (0x2c): `r = vt[32](this); return r == 103 || r == 104` — retail `cmp 103; beq L; cmp 104; moveq 1; beq end; L: mov 0` (branch-vs-conditional-execution residue); fn ptr in r2 not r1.
+
+## DllField@0xde620 (size 0x28; ~11 byte-identical-modulo-immediates sites)
+
+- Sites: kind=2: 0xde620 / 0xde67c / 0xde6d8 / 0xde734 / 0xde790 / 0xde7ec; kind=3: 0xdf3b0 / 0xdf40c / 0xdf468 / 0xdf4c4; kind=4: 0xdcafc.
+- Retail: `push {r4,lr}; ldr r0,[pool]; add r4,r1,#12; mov r1,#K; strb r1,[r4,#4]; str r0,[r4]; mov r0,#22; bl imp; strh r0,[r4,#6]; pop`. Fills a record at `out+12` {vtable ptr, byte kind @+4, short id @+6 = import(22)}.
+- Tried: `struct Rec *` at `out+12` with `vt = VT; kind = 2; id = imp(22)` -> 5/10 (armcc hoists the pool `ldr` above `push` and stores through r1 offsets, never r4); kind store first -> 4/10; `volatile` struct pointer -> 6/10 (push first, still stores via r1 offsets, order kind-then-vt).
+- Lead for next time: retail stores through r4 after `add r4,r1,#12` with the push first; the original probably passes `&out->rec` into something or keeps the pointer live across the call; untested: make the record pointer a by-reference of an inlined ctor.
+
+## DllField@0xb1bb8 (size 0x2c; 24 byte-identical sites incl. 0xb1ccc, 0xb231c, 0xb253c, 0xb2864, 0xb29ac)
+
+- Retail dtor stage: `str r1,[r0]` (vtable passed in), `ldr r1,[r0,#32]; cmp r1,#0; addne r1,r0,#32; blne local`, then `add r0,r4,#8; bl base; sub r0,r0,#8`.
+- Tried: `*(void**)this = vt; if (this[32]) Free(this, this+32); return Base(this+8) - 8;` -> 4/11; armcc emits the `beq`-branch form (ldr r0 first, add r1 after) instead of the conditional-execution `blne` with r1 reused.
+- Known class: branch-vs-conditional-execution residue. 24 sites make a solution valuable.
+
 ## DllBattle@0x2da0 (0x38) / 0x2dd8 (0x34) -- zero-register dtors
 
 - What they are: dtor stages — install the vtable, free the member at +0x14 if non-null and zero it; 0x2da0 tail-calls a base dtor, 0x2dd8 returns `this`.
