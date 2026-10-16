@@ -1704,6 +1704,7 @@ Kinds (find them all with
 | `live-r1-passthrough` | return type widened (`long long` built from `this` and the incoming 2nd arg) only to keep r1 live so a shared zero lands in r2 — least natural form; true signature unknown | DllField@0xae58, 0xe3fc, 0xe380 |
 | `volatile-store` | the vptr store goes through a `volatile` pointer purely to pin a register copy (`mov r4,r0`) ahead of the store — used with the C++ inline-member `Reset()` form (needs a `.cpp` file; the verifier switches to C++ mode from the suffix) | DllField@0xb1bb8 and its 23 byte-identical sites |
 | `wider-callee-return` | callee declared `long long` and the caller returns `(int)` of it, only to stop armcc tail-calling (r0 is the low word, the cast costs no code) | DllField@0xe1c4c, 0xe1fe8 |
+| `cpp-inline-member` | pointee-side logic written as an inline C++ member called on the loaded pointer (needs a `.cpp` file) | DllField@0x2948c |
 | `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848, DllPuzzle@0xbf80, DllTownmap@0x31d4, DllPhotoViewer@0x193c, DllStatus@0xa304, DllKisekae@0xb674, 0xb6ac |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
@@ -2620,6 +2621,15 @@ Notes: `DllBattle@0x4344c` matched (natural; `if (r == 103) return 0; return r =
 | `DllField` | `0xe1fe8` (0x2c, 11/11) | **trick(wider-callee-return)** | f11(a->first); return f79(a, a->sub.y /*+17*/, 0, 5) as a NON-tail call returning the callee r0 (twin of 0xe1c4c) |
 
 **`DllField@0xe1c4c` / `0xe1fe8` (0x2c, 11/11, `trick(wider-callee-return)`)** — `f11(a->first); return f79(a, a->sub.y /*+17*/, 0, 5)` as a NON-tail call returning the callee's r0. Mechanism: declare the callee as returning `long long` and have the caller return `(int)` of it — r0 is the low word, so the cast costs no code, but armcc stops tail-calling (matching int/int types give `pop {..,lr}; b f79`, 6/11). A struct, `unsigned char`, pointer, float or varargs return, or a static wrapper, did not block the tail call. A scan of every `.cro` for this prologue found only these two sites. The 20+ C++ forms tried on the zero-register destructor class did not help (see `attempted.md`).
+
+## 2026-10-16 round a — batch 18 (C++ inline-member sweep: DllField 0x2948c)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x2948c` (0x44, 17/17) | **trick(cpp-inline-member)** | guarded release: `t = this->t; if (t) { if (t->x) { fa(arg, t->x); t->st = -1; } else fb(0,0,0) }` (else arm is a tail call) |
+
+**`DllField@0x2948c` (0x44, 17/17, `trick(cpp-inline-member)`, `.cpp`)** — `t = this->t; if (t) { if (t->x) { fa(arg, t->x); t->st = -1; } else fb(0,0,0) /* tail call */ }`: the pointee-side logic written as an inline member `U::Go()` called on the loaded pointer (`if (s->t) ((U*)s->t)->Go(a);`); the plain-C form is 5/17. The mechanism generalises ("write the pointee-side logic as an inline member called on the loaded pointer") but only flipped this one of ~12 branch-vs-conditional-execution / scheduling failures swept (`attempted.md`). No byte-identical siblings exist in the corpus.
+**Verifier limitation, now confirmed twice:** `DllBattle@0x71a2c` and `DllField@0xb6844` / `0xb76c8` start at 4 mod 8, so retail has a zero pad word before its 8-aligned literal pool (ldr displacement 40 vs our 36), which a standalone compile starting at offset 0 can never emit — they need a `fingerprint_fn.py` option that tolerates pool-alignment padding. **Proposed tool improvement.**
 
 ## What this does *not* do yet
 
