@@ -3007,6 +3007,23 @@ Notes — **DllField GetMgr callers, `0x98000`-`0xa6000` (`armcc-r6-f3`, 43 matc
 
 Notes — **DllBattle 0x50-0xa0 tier (`armcc-r6-b4`):** `0x2924` releases two owned members (`@16` gets vt[4] then vt[1] and is nulled; `@20` gets vt[1] and is nulled); battle **event-trigger predicates** that call the `0x6b91c` query-by-id function and tail-call `0x4ce84` / `0x658d4`: `0xc489c` (fires when query(2)==c, query(3)!=c, query(32)==1, query(33)<0, then stores helper(66,1) through the out pointer), `0xc3a64` (query(3)==c and a lookup on `(u16)query(18)==1`, posts event 52), `0xac16c` (lookup on `(u8)query(2)==c`, event 54), `0xb8b84` (**trick(static-helper)**: a one-use static helper puts the u8 value in r1 as retail does), `0xc349c` (query(2)==c and `(u16)query(30)==4`, event 51), `0xc32e4` (query(3)==c and `(u16)query(18)` in {0x160, 0x18f, 0x196, 0x18c}, event 50). **Large untapped family:** ~330 event-trigger predicates at `0xa5000`-`0xca000` (a scan found ~777 functions of that size tier, ~207 below `0x30000`); those that save only `c`, or only `(d,c)`, match easily — many more should. Those that save both `b` and `c` (`0xa7cd0`, `0xa7188`, `0xc1244`) hit the callee-saved prologue-move swap.
 
+## 2026-10-16 round b — pool-pad tier harvest (NOT counted in the headline total)
+
+`poolpad/DllBattle/` now holds **8** POOL-PAD functions (each verified from the saved file with `--pool-pad`, exit 3, and confirmed to fail without the flag; all `Style: natural`). In the table, the *trace store* is `k = const; if (c->v != k) c->v = k;` on arg2 or arg3 at +0x6c.
+
+| Offset (size, code words) | What it does |
+|---|---|
+| `0x71a2c` (0x2c, 8) | trace store 0x12c6, then `f394b8(a, k, c) != 0` |
+| `0x3bdd8` (0x30, 10) | trace store 0xdf9 into `c->v`; `f1(o->p190 + 0x280, k)`; returns 1 |
+| `0x3e7a4` (0x38, 12) | trace store 0x14ab; returns `f1(o->p190->q4f4, 0) != 0` |
+| `0x3b534` (0x44, 15) | trace store 0x1465; if `p->q240` is non-null, vtable slot 1 on it and null it |
+| `0x43aec` (0x54, 19) | trace store 0x83f; vcall slot 4 of `p->q88`, null it, clear byte +0x93, `f1()`, tail `f2(p->r74, 1)` |
+| `0x4400c` (0x54, 19) | sibling of `0x43aec`, trace constant 0x882 |
+| `0x43fa8` (0x60, 22) | `0x43aec` shape plus zeroing the ints at +0x754 / +0x758 and `f1(0)` |
+| `0x71208` (0x48, 16) | trace store 0xa33; if `f1(o->p190, o->q764)` then `f2(o->p190 + 0x140)` and return 1, else 0 |
+
+(Plus DllField `0xb6844` / `0xb76c8` from the tool batch.) A word-level scan of DllBattle for a zero word after a terminator with a pc-loaded pool word behind it gave 111 start candidates; the DllField scan only found mid-function pools and big (≥ 0xb0 byte) functions. **Policy still pending the user's decision** (promote to `matched/` or keep as its own tier).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
