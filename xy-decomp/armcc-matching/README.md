@@ -1703,6 +1703,7 @@ Kinds (find them all with
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
 | `live-r1-passthrough` | return type widened (`long long` built from `this` and the incoming 2nd arg) only to keep r1 live so a shared zero lands in r2 — least natural form; true signature unknown | DllField@0xae58, 0xe3fc, 0xe380 |
 | `volatile-store` | the vptr store goes through a `volatile` pointer purely to pin a register copy (`mov r4,r0`) ahead of the store — used with the C++ inline-member `Reset()` form (needs a `.cpp` file; the verifier switches to C++ mode from the suffix) | DllField@0xb1bb8 and its 23 byte-identical sites |
+| `wider-callee-return` | callee declared `long long` and the caller returns `(int)` of it, only to stop armcc tail-calling (r0 is the low word, the cast costs no code) | DllField@0xe1c4c, 0xe1fe8 |
 | `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848, DllPuzzle@0xbf80, DllTownmap@0x31d4, DllPhotoViewer@0x193c, DllStatus@0xa304, DllKisekae@0xb674, 0xb6ac |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
@@ -2610,6 +2611,15 @@ Notes: `DllBattle@0x4344c` matched (natural; `if (r == 103) return 0; return r =
 | `DllField` | `0x94d48` (0x6c, 27/27 (with --mask-ranges 0x20:0x24; mapping recovered from relocations via tools/jumptable_relocs.py)) | natural | classifies mode byte inst()->+12->+28->+460: 0 for {0,2,6}, 1 for 8, 2 for {1,3}, err(0,0,0) then 2 for the rest. Note: cases that skip the error call and reach the shared `return 2` are written as `break` with `return 2` after the switch. |
 
 **New tool — `tools/jumptable_relocs.py <Module> <tbl_lo> <tbl_hi>`:** prints the real jump-table targets from the CRO's internal relocations (header `0x128`, 12-byte entries), i.e. the case-value→body mapping that `--mask-ranges` cannot prove. Matches made with `--mask-ranges` carry the exact Verify flags in their header and are labelled *relocation-derived, not compiler-proven* (details in `docs/decomp/armcc-toolchain.md`). `DllField@0x11298` (0x6c, 27/27, **no mask**) is the real start of the function whose mid-function switch is at `0x112a8` — if `this+0x7c` is non-null and k is 0x21/0x27/0x3c it calls that object's vtable slot 0/1/2 and returns 0, else 1 (the earlier `0x112c8`/`0x112dc`/`0x112f0` "functions" are its case bodies). `DllBattle@0x60e00` needs the global declared `extern S g;` (an object, not a pointer). Dead ends (`attempted.md`): `0x4b82c`, `0x6de1c`, `0x71250` / `0x743a8`; `0x30f1c` is too large (~0x180); `DllField@0x12840` is a destructor/constructor pair, not a switch; `bl; nop; nop; b` shapes (`DllBattle@0x4f158`, `0x4f5b0`, `0x52db0`) have the same relaxation-nop problem.
+
+## 2026-10-16 round a — batch 17 (non-tail-call blocker cracked: DllField 0xe1c4c twins)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0xe1c4c` (0x2c, 11/11) | **trick(wider-callee-return)** | f11(a->first); return f79(a, a->sub.y /*+17*/, 0, 5) as a NON-tail call returning the callee r0 (twin of 0xe1fe8) |
+| `DllField` | `0xe1fe8` (0x2c, 11/11) | **trick(wider-callee-return)** | f11(a->first); return f79(a, a->sub.y /*+17*/, 0, 5) as a NON-tail call returning the callee r0 (twin of 0xe1c4c) |
+
+**`DllField@0xe1c4c` / `0xe1fe8` (0x2c, 11/11, `trick(wider-callee-return)`)** — `f11(a->first); return f79(a, a->sub.y /*+17*/, 0, 5)` as a NON-tail call returning the callee's r0. Mechanism: declare the callee as returning `long long` and have the caller return `(int)` of it — r0 is the low word, so the cast costs no code, but armcc stops tail-calling (matching int/int types give `pop {..,lr}; b f79`, 6/11). A struct, `unsigned char`, pointer, float or varargs return, or a static wrapper, did not block the tail call. A scan of every `.cro` for this prologue found only these two sites. The 20+ C++ forms tried on the zero-register destructor class did not help (see `attempted.md`).
 
 ## What this does *not* do yet
 

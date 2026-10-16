@@ -57,12 +57,6 @@ armcc always folds the narrowing into the load (`ldrh`/`ldrb`), for every form t
 - 0x9aeb8 (0x30) sibling of matched 0x9af9c: `& 15` form emits `ldrb` instead of retail `ldrh; and #15`.
 Also stuck: 0x98bc0 (0x2c, uxth scheduled before `mov r3,#0`), 0x9d8f4 (0x2c, zero-register: retail materialises `mov r1,#0` after the adds), 0x9a618 (0x2c, pool-reg allocation differs).
 
-## DllField@0xe1c4c (twin 0xe1fe8; size 0x2c)
-
-- What it is: `unsigned char *p = (unsigned char*)a + 16; Fn11e8(a[0]); Fn79338(a, p[1], 0, 5); return 1;`-shaped — retail has no `mov r0,#1`, ends in `pop {r4,r5,r6,pc}`, so it is a NON-tail call that returns the callee's r0.
-- Tried: that source (10/11); `return Fn79338(...)` gives armcc's tail call (`b`) which is wrong; void / int / char / short / float callee return types — none avoided the tail call.
-- Lead for next time: find a construct that blocks armcc's tail-call optimisation while keeping r0 live.
-
 ## DllBattle@0x76398 (0x3c), 0x71a2c (0x2c), 0x7198c (0x40), 0x73524 (0x40), 0x77338 / 0x77428 family
 
 - 0x76398: bounded array push (`if (s->n >= 6) f394(0,0,0); s->a[s->n] = v; s->n++`, struct {u32 a[6]; u8 n}). Best 13/15 with `i = s->n; s->n = i+1; s->a[i] = v;`; only diff: retail `add r1,r0,#1; strb r1`, ours `add r2,r0,#1; strb r2` (register-allocation class).
@@ -216,6 +210,7 @@ Also stuck: 0x98bc0 (0x2c, uxth scheduled before `mov r3,#0`), 0x9d8f4 (0x2c, ze
 - How armcc allocates: the shared zero goes in the lowest free scratch register after r0 (`this`). In the leaf, retail had r1 live (an incoming arg passed through), so the zero went to r2; unused params don't keep r1 live, returning `x` does but adds `mov r0,r1`, and a `long long` return `((long long)x<<32)|(unsigned)t` keeps r1 live with zero extra code. In the dtor, after the call both r0 and r1 are free; armcc picks r0, retail r1.
 - Tried on top of the fixed ordering (all still r0 or worse): reusing the `vt`/`m` locals as the zero, hoisted `z=0` (lands in callee-saved r5), const-folding forms (`vt-vt`, `vt&0`, `m==0`), int/`void*`/`long long` callee result ignored, inline `memset`, struct wrapper assigned from a static const zero (adds pool loads), `*(int*)&f14=0`, `do{}while(0)`, an empty else, a 64-bit zero cast, a `char` zero.
 - Lead for next time: need r0 live across the store via a use that emits no code; a C++ context with an inlined smart-pointer `reset()` is the one unexplored idea.
+- Update 2026-10-16 (C++ attempt, `armcc-r5-cpp2`): 20+ C++ forms on top of the solved ordering, all still r0 — inline `Reset()` (also one returning `this`, one doing the whole destructor body), smart-pointer sub-object `P{p; reset()}` (9/14), `rel(void *n)` called with 0, a reference-parameter zero helper, `delete` / `delete[]` (12/14; delete of a virtual-dtor class 6/14), int / long long / pointer / double callee results ignored or used in `r-r` / `r&0` zeroing, a `P()` temporary (adds an sp spill), a real C++ destructor with a base class (ARM ABI emits D1/D0/D2, 29 words, not comparable). The inline-member lever that cracked DllField@0xb1bb8 doesn't apply: there it moved the null-test load to r1; here retail's test load is already r0 and the zero sits in r1 — opposite polarity, so r0 would have to stay live across the store without emitting code. DllPuzzle@0xb3fc stays 12/14; DllGts@0x9824 (virtual-call form) 12/14 with the same diff. The `a->member = 0` leaves and DllField@0x37714/0x37760/0x2aa40 sites were not retried.
 
 ## DllGts@0x7c8c
 
