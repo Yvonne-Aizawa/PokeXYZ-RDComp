@@ -1,13 +1,12 @@
 /*
  * DllBattle @ 0x60e00 (size 0x74) -- masked match 29/29, USING --mask-ranges 0x14:0x18 (jump table).
- * CASE-VALUE-TO-BODY MAPPING IS A HYPOTHESIS: the mask only proves the two case bodies, the
- * shared tail and the default-error block are byte-correct and in this order. Which of the 6 table
- * slots (0..5) point at the "r=1" body, the "pack" body, or straight to the shared return is NOT proven;
- * the slots below (0 -> 1, 1 -> pack, 2..5 -> 0) are a guess from physical body order.
- * What it does: maps a small selector to a packed code. One selector yields 1; another yields
- * 2 | (((calc(g_inst.f54, 3) + 2) << 3) & 0x1f8) (a 6-bit field + 2 tag bit, calc = import call, g_inst =
- * a relocated global object read at +0x54); the other in-range selectors return 0; out of range calls the
- * game's assert/error stub err(0,0,0) and returns 0.
+ * Case-value-to-body mapping: the mask alone cannot prove it, but it was RECOVERED from the CRO's
+ * internal relocations (tools/jumptable_relocs.py DllBattle 0x60e14 0x60e2c): slot 0 -> default/err block,
+ * slots 1,3,4,5 -> "r=1" body, slot 2 -> "pack" body (this source reproduces that: cases 1,3,4,5 share a
+ * body; selector 0 and >=6 hit the error stub). Relocation-derived, not compiler-proven.
+ * What it does: maps a small selector to a packed code: 1 for selectors 1/3/4/5; for 2:
+ * 2 | (((calc(g_inst.f54, 3) + 2) << 3) & 0x1f8) (calc = import call, g_inst = a relocated global
+ * object read at +0x54); selector 0 / out of range call the game's assert/error stub err(0,0,0), return 0.
  * Style: natural
  *
  * Verify:
@@ -22,9 +21,8 @@ int fn(int k)
 {
     int r = 0;
     switch (k) {
-    case 0: r = 1; break;
-    case 1: r = ((calc(g_inst.f, 3) + 2) << 3 & 0x1f8) | 2; break;
-    case 2: case 3: case 4: case 5: break;
+    case 1: case 3: case 4: case 5: r = 1; break;
+    case 2: r = ((calc(g_inst.f, 3) + 2) << 3 & 0x1f8) | 2; break;
     default: err(0, 0, 0); break;
     }
     return r;
