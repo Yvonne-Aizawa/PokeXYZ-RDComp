@@ -1702,6 +1702,7 @@ Kinds (find them all with
 | `void-ptr-passthrough` | callee declared `void*`, result offset `(char*)fn(p) - N`, to avoid a spare `mov r4,r0` | DllPuzzle@0x1e90, 0x4ba0, DllSalon@0x790, DllHeading@0x868, 0x16f4, 0x8ac, 0x1738 |
 | `pointer-walk` | sequential pointer-cursor moves only to reproduce retail's immediate splits / pre-indexed stores | DllSequence@0x1140, DllNumberInput@0x18fc |
 | `live-r1-passthrough` | return type widened (`long long` built from `this` and the incoming 2nd arg) only to keep r1 live so a shared zero lands in r2 — least natural form; true signature unknown | DllField@0xae58, 0xe3fc, 0xe380 |
+| `volatile-store` | the vptr store goes through a `volatile` pointer purely to pin a register copy (`mov r4,r0`) ahead of the store — used with the C++ inline-member `Reset()` form (needs a `.cpp` file; the verifier switches to C++ mode from the suffix) | DllField@0xb1bb8 and its 23 byte-identical sites |
 | `ordering-local` | locals (`vt = VT`, hoisted member loads) only to fix load / pool-load order | the `vt`-local destructor family (15: DllBattleHouseConnect@0x2fc, DllCommendation@0xc94, DllEshop@0x554, DllFatalErrorProc@0x284, DllFriendEntry@0x4c4, DllGameClearSave@0xd6c, DllGameSync@0x5e0, DllLiveCup@0x764, DllRandomTrade@0x8b4, DllStaffRoll@0x2c44, DllSubScreenTutorial@0x12cc, DllTrainerCase@0x37e4, DllTrialDownload@0x728, DllTrialHouseResult@0x2648, DllTradelist@0xc04) + DllGts@0x5be0, 0x53e4, 0x5ba8, 0x5bc4, 0x5ad4, DllSalon@0xd5c, DllBag@0x13848, DllPuzzle@0xbf80, DllTownmap@0x31d4, DllPhotoViewer@0x193c, DllStatus@0xa304, DllKisekae@0xb674, 0xb6ac |
 
 **Audit (2026-10-15):** all 377 matched files were screened — a script flagged
@@ -2555,6 +2556,49 @@ Notes — **DllBattle comparison-wrapper family (32 sites, all size 0x2c, 11/11)
 | `DllField` | `0xe31f4` (0x30, 12/12) | natural | returns 1 if o=arg->[0] has byte[0x87f] set and Check(o,0x800000) true, else 2 |
 
 Notes — **DllField `0xd000`-`0xe400` tier (`armcc-r4-f3`):** `0xe248c` is 0x24 (a size enumeration said 0x2c): the trailing `mov r0,#12; bx lr` at `0xe24b0` is a separate return-12 stub nobody has claimed. `0xd50b8` size 0x34 includes the 0.0f literal word.
+
+## 2026-10-16 round a — batch 15 (residues cracked: DllField 0xb1bb8 x24 via C++ Reset(); DllField 0x90000-0xd0000 tiers)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x4344c` (0x2c, 11/11) | natural | vt[0x80](this,a) result compared, returns r==103\|\|r==104 (early-return spelling gives retail beq/moveq/beq shape) |
+| `DllField` | `0x91364` (0x30, 12/12) | natural | Calls H1(mgr->+12->+72), H2(), H3(mgr->+28, 2); returns 0. |
+| `DllField` | `0x916dc` (0x30, 12/12) | natural | If mgr->+28 has a non-null pointer at +148, calls H() and clears the word at (mgr->+28)+124+24; returns 0. |
+| `DllField` | `0x92688` (0x2c, 11/11) | natural | Reads args[1], fetches the manager and calls Helper(mgr->+12->+28->+36, args[1], 10); returns 0. |
+| `DllField` | `0x9af9c` (0x30, 12/12) | natural | Calls H(q) on the sub-object at mgr->+12->+28->[0] + 0x1aeec, then returns bits 4+ of its u16 field at +4. |
+| `DllField` | `0xb0378` (0x3c, 15/15) | natural | boolean query: import(this) nonzero, or this->[0x5a4] non-null and import on it nonzero -> 1, else 0 |
+| `DllField` | `0xb1a10` (0x50, 20/20) | natural | dtor stage: install vtable, virtual-delete member +0x430 and free handle +4 (each if set, zeroed), return this |
+| `DllField` | `0xb1bb8` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb1ccc` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb231c` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb253c` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb2864` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb29ac` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb2e3c` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb3320` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb3704` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb5a00` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb5ab4` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb7bbc` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb7ec8` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb8180` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb86ec` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb8778` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xb8e28` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xba914` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xbc390` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xbc5dc` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xc0060` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xc0ebc` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xc1f28` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xc2618` (0x2c, 11/11) | **trick(volatile-store)** | secondary-base dtor stage -- store vtable arg, `if (this[32]) Free(this, this+32)`, return Base(this+8)-8 (one of 24 identical sites) |
+| `DllField` | `0xc2a7c` (0x44, 17/17) | natural | release helper: this[168] -> fb(fa(x)) + zero; this[156] -> virtual delete (vt slot 1) + zero |
+| `DllField` | `0xc2ac0` (0x40, 16/16) | natural | argument-marshalling thunk forwarding seven values (derefs of 4 args, 0, plus a stack arg) to an import |
+| `DllField` | `0xc8f88` (0x3c, 15/15) | **trick(ordering-local)** | state-handler step: import(this[100],this[180]) == 0 -> 50; else second import, state[180]=13, returns byte this[189] |
+| `DllPuzzle` | `0x1014` (0x1c, 7/7) | natural | if (p->f4->f2c->f60 == 1) p->f8 = 2 leaf (moveq/strbeq) |
+
+**Mechanism cracked — C++ inline-member `Reset()` (DllField `0xb1bb8` family, 24 identical sites, each 11/11, `.cpp` files, `trick(volatile-store)`):** armcc if-converts a call arm (`addne r1,r0,#32; blne`) only when the arm is ≤ 2 instructions. In plain C the null-test load lands in r0 (r0 looks dead once `this` is copied to r4), so the arm needs `mov r0,r4` and armcc emits a `beq` branch instead (4/11). Written as an inline C++ member (`void Reset() { if (m) fr(this, &m); }`) the test load goes to r1 and r0 stays `this`, giving retail's form (8/11); the vptr store through a `volatile` pointer then pins the `mov r4,r0` ahead of it (11/11). Sites: `0xb1bb8`, `0xb1ccc`, `0xb231c`, `0xb253c`, `0xb2864`, `0xb29ac`, `0xb2e3c`, `0xb3320`, `0xb3704`, `0xb5a00`, `0xb5ab4`, `0xb7bbc`, `0xb7ec8`, `0xb8180`, `0xb86ec`, `0xb8778`, `0xb8e28`, `0xba914`, `0xbc390`, `0xbc5dc`, `0xc0060`, `0xc0ebc`, `0xc1f28`, `0xc2618` (a byte-pattern scan of every `.cro` found the pattern only in DllField). **This C++ trick may unlock other branch-vs-conditional-execution cases** (DllField `0xcae50` / `0xcb41c`, DllBattle `0x7198c` / `0x73524`, the `0xb6844` / `0xb76c8` secondary-base dtor pair).
+Notes: `DllBattle@0x4344c` matched (natural; `if (r == 103) return 0; return r == 104;`). `DllPuzzle@0x1014` matched (plain C: `if (p->f4->f2c->f60 == 1) p->f8 = 2`; the old `DllPuzzle@0x100c` entry was a mis-offset — 0x100c..0x1013 are two zero words). `DllField@0xde620` (11 sites) is still not cracked (best 7/11; the Reset() trick doesn't carry over). Other DllField batch notes: `0xc8f88` needs the byte read in a local before the state store (else the `ldrb` lands after the `str`, 12/15); `0xb1a10` (0x50) includes the trailing vtable pool word (0x4c is 19/19); `0xcff28`, `0xcaf30`, `0xc2b00`, `0xcc4d8` and ~44 candidates in `0xb0000`-`0xd0000` untried (many are 0x64-byte 4-call functions). `armcc-r4-f1` stuck handlers: `0x93d10`, `0x948f0`, `0x93b30`, `0x94d18`, `0x9aeb8` (arg-load width) and `0x98bc0`, `0x9d8f4`, `0x9a618` (see `attempted.md`); `0x95130` (11/11, sibling of `0x92688`) was dropped at the ceiling — a quick pickup.
 
 ## What this does *not* do yet
 

@@ -1,7 +1,0 @@
-## DllField@0xde620 (size 0x2c incl. pool word) -- record fill at out+12 (about 11 identical sites)
-
-- What it is: `f(a, out)`: `r = out+12; r->kind@4 = 2; r->vt = VT (pool); r->id@6 = imp(22)`.
-  Retail: `push{r4,lr}; ldr r0,=VT; add r4,r1,#12; mov r1,#2; strb r1,[r4,#4]; str r0,[r4]; mov r0,#22; bl imp; strh r0,[r4,#6]`.
-- Best: 7/11 (volatile qualification of the kind store or of the whole record pointer, e.g. `((volatile R*)r)->kind = 2`, or reassigning the param `r = (R*)((char*)r+12)` + `*(volatile unsigned char*)&r->kind = 2`). Those fix the "push first, pool load later" ordering, but armcc still addresses the pre-call stores as `[r1,#12/#16]` and keeps `add r4,r1,#12` only for the post-call strh; retail stores everything via r4 and reuses r1 for the constant 2 (so `out` is dead right after the add).
-- Tried (all 5-7/11): plain / pointer local / `R *r = out+1` / `&out[1]`; param reassignment; static inline init helpers (void and pointer-returning); inline C++ member Fill()/Fill2() incl. `volatile` member and volatile this-casts; placement-new ctor (own inline operator new); `char *p` cursor; kind-first vs vt-first store order; `R * volatile` pointer variable (0/11).
-- Lead: need a form where the record pointer pseudo is materialised BEFORE the stores and not folded into base+offset. The inline-member trick that cracked DllField@0xb1bb8 (see matched-DllField-0xb1bb8.md) did NOT carry over here.

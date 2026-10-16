@@ -15,6 +15,33 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllField@0xde620 (size 0x2c incl. pool word) -- record fill at out+12 (about 11 identical sites)
+
+- What it is: `f(a, out)`: `r = out+12; r->kind@4 = 2; r->vt = VT (pool); r->id@6 = imp(22)`.
+  Retail: `push{r4,lr}; ldr r0,=VT; add r4,r1,#12; mov r1,#2; strb r1,[r4,#4]; str r0,[r4]; mov r0,#22; bl imp; strh r0,[r4,#6]`.
+- Best: 7/11 (volatile qualification of the kind store or of the whole record pointer, e.g. `((volatile R*)r)->kind = 2`, or reassigning the param `r = (R*)((char*)r+12)` + `*(volatile unsigned char*)&r->kind = 2`). Those fix the "push first, pool load later" ordering, but armcc still addresses the pre-call stores as `[r1,#12/#16]` and keeps `add r4,r1,#12` only for the post-call strh; retail stores everything via r4 and reuses r1 for the constant 2 (so `out` is dead right after the add).
+- Tried (all 5-7/11): plain / pointer local / `R *r = out+1` / `&out[1]`; param reassignment; static inline init helpers (void and pointer-returning); inline C++ member Fill()/Fill2() incl. `volatile` member and volatile this-casts; placement-new ctor (own inline operator new); `char *p` cursor; kind-first vs vt-first store order; `R * volatile` pointer variable (0/11).
+- Lead: need a form where the record pointer pseudo is materialised BEFORE the stores and not folded into base+offset. The inline-member trick that cracked DllField@0xb1bb8 (see matched-DllField-0xb1bb8.md) did NOT carry over here.
+
+## DllField 0xbe3e8 (0x2c), 0xb4e84 (0x2c), 0xb0334 (0x44), 0xb6844 / 0xb76c8 (0x58) -- stuck
+
+- `0xbe3e8` / `0xb4e84` (identical bytes bar branch targets): `push {r4,lr}; mov r4,r0; r0=this[0x24]; r2=1; bl fa (r1 = incoming 2nd arg); movs r1,r0; beq ret; mov r0,r4; pop {r4,lr}; b fb; ret: pop {r4,pc}`.
+  Best C `void Fn(char*s,int a){int r=fa(*(void**)(s+36),a,1); if(r) fb(s,r);}` gives 6/11: armcc emits `cmp r0,#0` + later `mov r1,r0` instead of the retail `movs r1,r0` before the branch. Tried: int/pointer result, reusing the param (`a = fa(..)`), `if ((r = fa()))`, non-void `return fb(s,r)` / `return r`. None change it. Lead: some construct that makes armcc hoist the `mov r1,r0` above the test (the movs form) -- maybe the result is stored to a second live variable, or the true signature has fb taking more args.
+- `0xb0334` (0x44): same `movs r5,r0` shape (pushes {r4-r6}, so something extra is live): `r=fa(this[0x560]); if(r){o=this[0x5a4]->[0x24]; if(o) tail vt[1](o, r, 0);}`. My C compiles to `push {r4,lr}` + `movs r1,r0` (8/17).
+- `0xb6844` / `0xb76c8` (0x58 incl. pool word): secondary-base dtor: `this[56]=v+32; this[0]=v; this[80]=v+48; fa(this[92], this+80); this[0]=VT; if(this[32]) fb(this, this+32); return fc(this+8)-8`. The tail (17/22 after the `q`/`t` locals making the `addne r1,r0,#32; blne` form) matches, but the head allocates `v+48` into r0 where retail uses r2 (and keeps r0 = v+32 live), and the pool offset differs by one word. Stores must appear [56],[0],[80]; locals for v+32/v+48 swap the order wrongly.
+
+## DllField script-command handlers whose only miss is the arg-load width (0x93d10, 0x948f0, 0x93b30, 0x94d18, 0x9aeb8) -- 2026-10-16
+
+Handlers `int Fn(int self, int *args)` reading `args[1]` and narrowing it. Retail does a full `ldr rX,[r1,#4]` then `uxth`/`sxtb`/`strb`;
+armcc always folds the narrowing into the load (`ldrh`/`ldrb`), for every form tried (`unsigned short i = a[1]`, `int v=a[1]; short i=v`,
+`a[1] & 0xffff`). Same residue class as ldrd/ldrh narrowing. Each is otherwise 11/12 or 12/12 with the right body:
+- 0x93d10 (0x2c): `*(char*)(*(char**)(*(char**)(*(char**)(mgr+12)+28)) + 0x1539c) = args[1]; return 0` (local `char *q = b + 0x1539c` reproduces the split `add`s); miss ldr vs ldrb.
+- 0x948f0 (0x2c): `return ((int*)(tbl396 + (u16)args[1]*28))[5]`; miss ldr vs ldrh.
+- 0x93b30 (0x30): `H1(mgr[11], (u16)args[1]); H2(mgr); return 0`; miss ldr vs ldrh.
+- 0x94d18 (0x30): `H(b + 0x14cd0, (signed char)args[1])`; miss ldr vs ldrb.
+- 0x9aeb8 (0x30) sibling of matched 0x9af9c: `& 15` form emits `ldrb` instead of retail `ldrh; and #15`.
+Also stuck: 0x98bc0 (0x2c, uxth scheduled before `mov r3,#0`), 0x9d8f4 (0x2c, zero-register: retail materialises `mov r1,#0` after the adds), 0x9a618 (0x2c, pool-reg allocation differs).
+
 ## DllField@0xe1c4c (twin 0xe1fe8; size 0x2c)
 
 - What it is: `unsigned char *p = (unsigned char*)a + 16; Fn11e8(a[0]); Fn79338(a, p[1], 0, 5); return 1;`-shaped — retail has no `mov r0,#1`, ends in `pop {r4,r5,r6,pc}`, so it is a NON-tail call that returns the callee's r0.
@@ -86,20 +113,7 @@ Format per entry:
 - 0x4cf8c (0x34): `if (i >= 7) fnA(0,0,0); o->v[i] = val` (int array at +28). Callee-saved assignment swapped (9/13) — val/o swap r5/r6.
 - 0x4d318 (0x30): `return fnA(o,13) == fnA(o,14)`; o lands in r5 / first result r4 (ours) vs r4/r5 (retail), 8/12. Tried temporaries and an if-form.
 - 0x48344 (0x38): `if (vt[38](this)) fnA(this->m@0xb8, v); this->b@0x4e = v;` 12/14 — retail loads the vfn into r1, ours r2; tried prototyped / unprototyped vt and a local fn ptr.
-- 0x4344c (0x2c): `r = vt[32](this); return r == 103 || r == 104` — retail `cmp 103; beq L; cmp 104; moveq 1; beq end; L: mov 0` (branch-vs-conditional-execution residue); fn ptr in r2 not r1.
-
-## DllField@0xde620 (size 0x28; ~11 byte-identical-modulo-immediates sites)
-
-- Sites: kind=2: 0xde620 / 0xde67c / 0xde6d8 / 0xde734 / 0xde790 / 0xde7ec; kind=3: 0xdf3b0 / 0xdf40c / 0xdf468 / 0xdf4c4; kind=4: 0xdcafc.
-- Retail: `push {r4,lr}; ldr r0,[pool]; add r4,r1,#12; mov r1,#K; strb r1,[r4,#4]; str r0,[r4]; mov r0,#22; bl imp; strh r0,[r4,#6]; pop`. Fills a record at `out+12` {vtable ptr, byte kind @+4, short id @+6 = import(22)}.
-- Tried: `struct Rec *` at `out+12` with `vt = VT; kind = 2; id = imp(22)` -> 5/10 (armcc hoists the pool `ldr` above `push` and stores through r1 offsets, never r4); kind store first -> 4/10; `volatile` struct pointer -> 6/10 (push first, still stores via r1 offsets, order kind-then-vt).
-- Lead for next time: retail stores through r4 after `add r4,r1,#12` with the push first; the original probably passes `&out->rec` into something or keeps the pointer live across the call; untested: make the record pointer a by-reference of an inlined ctor.
-
-## DllField@0xb1bb8 (size 0x2c; 24 byte-identical sites incl. 0xb1ccc, 0xb231c, 0xb253c, 0xb2864, 0xb29ac)
-
-- Retail dtor stage: `str r1,[r0]` (vtable passed in), `ldr r1,[r0,#32]; cmp r1,#0; addne r1,r0,#32; blne local`, then `add r0,r4,#8; bl base; sub r0,r0,#8`.
-- Tried: `*(void**)this = vt; if (this[32]) Free(this, this+32); return Base(this+8) - 8;` -> 4/11; armcc emits the `beq`-branch form (ldr r0 first, add r1 after) instead of the conditional-execution `blne` with r1 reused.
-- Known class: branch-vs-conditional-execution residue. 24 sites make a solution valuable.
+- 0x4344c (0x2c): **matched 2026-10-16** (11/11, natural) — written `if (r == 103) return 0; return r == 104;` (the `||` spelling gives `cmpne/movne`); forwarded int arg moves the vtable load into r2.
 
 ## DllBattle@0x2da0 (0x38) / 0x2dd8 (0x34) -- zero-register dtors
 
@@ -187,12 +201,6 @@ Format per entry:
 - How armcc allocates: the shared zero goes in the lowest free scratch register after r0 (`this`). In the leaf, retail had r1 live (an incoming arg passed through), so the zero went to r2; unused params don't keep r1 live, returning `x` does but adds `mov r0,r1`, and a `long long` return `((long long)x<<32)|(unsigned)t` keeps r1 live with zero extra code. In the dtor, after the call both r0 and r1 are free; armcc picks r0, retail r1.
 - Tried on top of the fixed ordering (all still r0 or worse): reusing the `vt`/`m` locals as the zero, hoisted `z=0` (lands in callee-saved r5), const-folding forms (`vt-vt`, `vt&0`, `m==0`), int/`void*`/`long long` callee result ignored, inline `memset`, struct wrapper assigned from a static const zero (adds pool loads), `*(int*)&f14=0`, `do{}while(0)`, an empty else, a 64-bit zero cast, a `char` zero.
 - Lead for next time: need r0 live across the store via a use that emits no code; a C++ context with an inlined smart-pointer `reset()` is the one unexplored idea.
-
-## DllPuzzle@0x100c (size ?)
-
-- What it is: `if (f4->f2c->f60 == 1) f8 = 2` (push-less leaf).
-- Stuck on: misses 3 words — retail uses a branch here; armcc emits conditional execution (`moveq` / `strbeq`).
-- Lead for next time: a natural-looking way to stop armcc if-converting (a call or volatile read in the arm, or an `else` with real work).
 
 ## DllGts@0x7c8c
 
