@@ -15,6 +15,26 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle@0x4bed4 (size 0x20)
+
+- What it is: `return fnA(o->m@0x5c, k, 16) == 5;` (`k` passes through in r1).
+- Tried: plain `void *` member, typed struct, int member, unprototyped `fnA()`, local `n = 16` / local `m`, if/else return form.
+- Stuck on: 6/8 — retail emits `mov r2,#16` BEFORE `ldr r0,[r0,#92]`; armcc always loads r0 first.
+- Lead for next time: the retail order suggests the 16 is materialised before the member load (maybe an inlined accessor); untested: the constant via a static / enum, or `k` reassigned.
+
+## DllField@0x4a478 (size 0x20; siblings 0x4a458, 0x530ec) -- dtor stage: install vptr, call import, return this
+
+- Retail: `push {r4,lr}; mov r4,r0; ldr r0,[pool vptr]; str r0,[r4]; mov r0,r4; bl; mov r0,r4; pop`.
+- Tried: `a->vp = vt; Imp(a); return a;` and a local-vt variant -> 0/8; armcc loads the pool vptr into r1 BEFORE the push where retail loads it after `mov r4,r0`, reusing r0 (vptr scheduling residue).
+- Lead for next time: none yet.
+
+## DllField@0x58ba0 (size 0x20; sibling 0x58bc0)
+
+- What it is: `Imp(a, (short)b[1], 0, 9, 0)` — retail `ldr r1,[r1,#4]; mov r2,#0; mov r3,#9; str r2,[sp]; sxth r1,r1; bl`.
+- Tried: int / short-param prototypes.
+- Stuck on: 4/8 — armcc narrows the int load + `sxth` to `ldrh` (the ldrd/ldrb-style narrowing residue).
+- Lead for next time: none yet.
+
 ## DllField@0xcae50 (size 0x6c; byte-sibling 0xcb41c: constants 75/77/78, bits 0x100000/0x200000)
 
 - What it is: state handler — `fa(this->[68], 1); if (fb(p+184) && (r = fc(p+184)) != 83) { if (r == 85 || r == 86) flags(+164) |= 0x1000000, return 1; else return 0 } else flags |= 0x2000000, return 1`.

@@ -2366,6 +2366,31 @@ Note: the this-adjusting dtor thunks start at `0xc9c48`, `0xc9c5c`, `0xc9c70` (t
 
 Notes: **DllBattle `0x8b2e8` family** (0x28 incl. the trailing `pop {r4,pc}`; a 0x24 compile shows 9/9 and misses that last word): `if (this->member@N) { fa(member); } return fb(arg2)`-style member-gated tail call; N = +232 (`0x8b2e8`, `0x8e858`), +236 (`0x8bcb8`), +216 (`0x8db3c`), +224 (`0x8f210`, `0x8fa38`). **Same-bytes siblings not yet compiled** (member offset in brackets; same source with a different `pad[]` should match): `0x90590` [224], `0x910d4` [244], `0x92874` [228], `0x935cc` [228], `0x949f0` [228], `0x954a0` [244], `0x96744` [244], `0x97960` [216], `0x98a04` [232], `0x993b8` [232], `0x99ff4` [220], `0x9a9b0` [280], `0x9c5dc` [224]. **DllField `0xc9060`/`0xca54c`** (0x30): two imports, if the second returns 0 and `this->[68]` is non-null tail-calls an import on it. `0xcbc60` / `0xcc474`: state-handler steps (id 103 / 104). The "getter via 0x5dc68/0x707d4" cluster (DllBattle `0x7b20c`, `0x835f8`, `0x7b2e4`, `0x7bec4`, `0x81544`, `0x81568`, `0x81594`, tail forms `0x7a11c`, `0x7b320`, `0x78488`, `0x7957c`) failed — see `attempted.md`. DllField `0xcf000`-`0xd0000` and `0xe1c00`-`0xe2000` tiers look untried; ~374 candidates at 0x2c-0x70 bytes remain above `0x90000`.
 
+## 2026-10-16 round a — batch 8 (DllField call veneers, DllBattle misc)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x3342c` (0x2c, 11/11) | natural | ctor stage: base ctor, install vtable, zero four ints at +56..+68, return this |
+| `DllBattle` | `0x36d64` (0x10, 4/4) | natural | chained call `fnB(fnA(o))`, second call a tail call |
+| `DllBattle` | `0x38678` (0x1c, 7/7) | natural | `b = a ? a->b : fnA(a); return b->v` with a = o->+12 |
+| `DllBattle` | `0x4c124` (0x1c, 7/7) | natural | tail-call wrapper `return fnB(fnA(o, 14), p)` |
+| `DllBattle` | `0x4c374` (0x3c, 15/15) | natural | range-checked (i<11) getter `o->p->v[i] != 0` with assert stub on out-of-range |
+| `DllField` | `0x543b4` (0x18, 6/6) | natural | calls import veneer (*arg0, 16) and returns 3 |
+| `DllField` | `0x543d4` (0x1c, 7/7) | natural | calls import veneer (*arg0, 8, 1) and returns 3 |
+| `DllField` | `0x5449c` (0x1c, 7/7) | natural | calls import veneer (this, 2, 21, this->byte@10) and returns 1 |
+| `DllField` | `0x544c0` (0x1c, 7/7) | natural | calls import veneer (this, 4, 19, this->byte@10) and returns 1 |
+| `DllField` | `0x544e4` (0x1c, 7/7) | natural | calls import veneer (this, 8, 15, this->byte@10) and returns 1 |
+| `DllField` | `0x547a8` (0x18, 6/6) | natural | calls import veneer (arg1->field@16, arg2) and returns 1 |
+| `DllField` | `0x54de4` (0x1c, 7/7) | natural | calls import veneer (*arg0, 8, 0) and returns 3 |
+| `DllField` | `0x54e48` (0x1c, 7/7) | natural | calls import veneer (this, 16, 10, this->byte@10) and returns 1 |
+| `DllField` | `0x54e6c` (0x1c, 7/7) | natural | calls import veneer (this, 32, 5, this->byte@10) and returns 1 |
+| `DllField` | `0x552b0` (0x18, 6/6) | natural | calls import veneer (this, this->byte@10, 12) and returns 1 |
+| `DllField` | `0x552d0` (0x18, 6/6) | natural | calls import veneer (this, this->byte@10, 14) and returns 1 |
+| `DllField` | `0x552f0` (0x18, 6/6) | natural | calls import veneer (this, this->byte@10, 16) and returns 1 |
+| `DllField` | `0x55310` (0x18, 6/6) | natural | calls import veneer (this, this->byte@10, 32) and returns 1 |
+
+Notes: **DllField call-veneer families (`armcc-r3-f1`):** `(this, this->byte@10, 12/14/16/32)` returns 1 (`0x552b0`/`0x552d0`/`0x552f0`/`0x55310`); `(this, a, b, this->byte@10)` returns 1 with literals (2,21), (4,19), (8,15), (16,10), (32,5) (`0x5449c`, `0x544c0`, `0x544e4`, `0x54e48`, `0x54e6c` — literal-only siblings of `0x4a49c`); `(*arg0, 16)`/`(*arg0, 8, 1)`/`(*arg0, 8, 0)` returning 3 (`0x543b4`/`0x543d4`/`0x54de4`); `0x547a8` (`arg0` unused). **DllBattle `0x4c124`** (`return fnB(fnA(o, 14), p)`), **`0x36d64`** (0x10; the trailing `b` belongs to the next function), **`0x4c374`** (range-checked getter, write the in-range case first — the `if (i >= 11)` form flips the branch and block order), **`0x3342c`** (0x2c incl. the vtable pool word: base ctor, vtable, zero four ints at +56..+68), **`0x38678`**. DllBattle `0x30f1c` and `0x4b82c` are switch prologues; most remaining `0x30000`-`0x60000` candidates are switch / jump-table functions. DllField dtor-style siblings `0x4a458`, `0x530ec`, `0x4009c` look residue-prone.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
