@@ -2484,6 +2484,27 @@ Not matched: conditional-store chain (`0x41f94`, `0x434ec`, `0x439d4`, `0x3c960`
 
 Notes — **DllBattle `0x60000`-`0x78000` (`armcc-r3-b1`):** all three are **trick(redundant-local)**: a local `void **pp = &o->fld` reproduces retail's cached field address (using `o->fld` directly gave 2/21 on `0x75050`); `0x750a4` (0x84 incl. the trailing pool word) converts entry [i] of an 8-byte `{int,int}` global table to floats in a `float v[3]` (z unused, lands at sp+4). **Verifier limitation found:** `DllBattle@0x71a2c` matches all 8 code words, but retail has a 0 pad word before the pool constant (function starts at 4 mod 8, pool 8-aligned) which a standalone compile can't reproduce — it would match if `fingerprint_fn.py` tolerated pool-alignment padding (a tool improvement worth making).
 
+## 2026-10-16 round a — batch 12 (DllBattle 0x8b2e8 family siblings x14, all natural)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x90590` (0x28, 10/10) | natural | if member at this+224 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x910d4` (0x28, 10/10) | natural | if member at this+244 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x92874` (0x28, 10/10) | natural | if member at this+228 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x935cc` (0x28, 10/10) | natural | if member at this+228 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x949f0` (0x28, 10/10) | natural | if member at this+228 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x954a0` (0x28, 10/10) | natural | if member at this+244 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x96744` (0x28, 10/10) | natural | if member at this+244 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x97960` (0x28, 10/10) | natural | if member at this+216 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x98a04` (0x28, 10/10) | natural | if member at this+232 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x993b8` (0x28, 10/10) | natural | if member at this+232 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x99ff4` (0x28, 10/10) | natural | if member at this+220 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x9a9b0` (0x28, 10/10) | natural | if member at this+280 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+| `DllBattle` | `0x9b87c` (0x24, 9/9) | natural | if member at this+224 is non-null, fa(member) then tail-call fb(0); else no-op (void) |
+| `DllBattle` | `0x9c5dc` (0x28, 10/10) | natural | if member at this+224 is non-null, fa(member) then tail-call fb(a) with the 2nd arg; else no-op (void) |
+
+Notes — the 13 listed siblings of the `0x8b2e8` family all match (`pad[]` / member offset 216-280, 10/10 at 0x28); `0x9b87c` (0x24, 9/9) is the same shape with no second argument (`if (o->m) { fa(o->m); fb(0); }`, member +224). A scan of the whole DllBattle `.text` for the exact masked pattern found 19 sites, all now matched.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
