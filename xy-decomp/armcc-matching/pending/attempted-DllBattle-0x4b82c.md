@@ -1,0 +1,3 @@
+## DllBattle @ 0x4b82c (size 0xa8) -- not matchable as-is: relaxed-call nops
+- What it is: 8-slot jump table (cmp r1,#8); slots select `this+0x104..0x10a` (7 bodies; computed as add #0x100 then add #N, then shared `ldrsb r5,[r0]; r0 = 12 - r5`); default calls err(0,0,0) with r5=0 -> returns 12. push {r4,r5,r6,lr} with r4=12/r5=0 initialised before the dispatch.
+- Tried: plain switch with `p = this+N` per case and shared `v=*p`: armcc folds +0x100+N into one add, uses push {r4,lr} and r4 for the load; retail keeps add #256 and add #N separate and holds 12 and 0 in r4/r5. Also the default has `bl; nop; nop; b` (relaxation nops in the retail bytes) which is relaxed-only territory. Not a match candidate.
