@@ -15,6 +15,19 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle 0x50-0xa0 tier -- unmatched (round b)
+
+Candidate re-derivation: 777 push..pop-bounded functions of 0x50-0xa0 bytes not in matched/ or attempted.md (207 below file offset 0x30000). The large clusters are (a) ~330 "battle event trigger" predicates (`bl 0x6b91c` query(N) == c ...; tail-call `b 0x4ce84`/`0x658d4`) at 0xa5000-0xca000 and (b) ~60 script-command state handlers (`switch (*state)` 0/1/2/3, `ldr r1,[r2]; and r4,r1,#255; cmp #24` slot lookups).
+
+- **Event triggers that save BOTH b (r1) and c (r2)** (0xa7cd0 0x64, 0xa7188 0x70, 0xc1244 0x68, 0xa6504 ...): body is 23/25 or 8/28 correct but retail emits the prologue moves `mov r5,r1 ; mov r4,r2` (b before c; in 0xa7cd0 `r5=r3, r6=r1, r4=r2`) while armcc here emits c before b (`r4=r2 ; r5=r1`). Allocation (b->r5/r6, c->r4) is identical, only the move order differs. Tried: operand order of the compare, early-return form, nested ifs, local copies of b/c/d, param type changes (unsigned/void*/const/extra arg). No natural form found. Siblings that save only c, or only (d,c), match fine (0xc489c, 0xc3a64, 0xc349c, 0xc32e4, 0xac16c, 0xb8b84 saved).
+- **Two-case state handlers** 0xc020 (0x54), 0x86b0 (0x58), 0x8f84/0x7814-style: `cmp r1,#0; beq A; cmp r1,#1; bne end; b B` -- 20/21 with `switch (*p) { case 0: A; break; case 1: if (g()) return 1; break; } return 0;` but armcc emits `beq B` for the second dispatch (retail `bne end; b B`). if/else-if and default/return forms are worse. Unknown source form.
+- **0x2d67c (0x60)** dtor: 18/24, retail loads `o->q@360` into r1 before `mov r4,r0` and puts the pool vtable in r0; every ordering form (plain, `q` local, `vt` local) swaps r0/r1.
+- **0x2ad20 (0x74)** 13/29: right body (`if (n<=i) err; p=o+i*14; hp = hp>=amt ? hp-amt : 0; if (p[290]) { p[280]=hp; f(h,i) }`, no `and` with if/else form) but retail has idx in r6/amt in r5 and the slot pointer in r0; armcc swaps r5/r6 and uses r3.
+- **0x2dcc4 / 0x2dd2c (0x68)** `{u8 buf[]; flag[]; u16 h[]; u8 a[]; n; max}` append (`if (n<max) {...; n++} else err(0,0,0)`): 16-17/26, register assignment (retail n in r4, zero in ip, array bases r5/r1 hoisted) differs.
+- **0x53dc (0x5c)**, **0x9888 / 0x8ab4 / 0xfec8 / 0xe940 / 0x7814 / 0xcb44** script handlers: retail `ldr r1,[r2]; and r4,r1,#255` (word load then and); armcc folds to `ldrb` -- same already-documented residue (see the 0xf420/0xca9c entry); 0x9888's `ldm r2,{r1,r5}` pair load is the extra tell.
+- **0x2bb58 (0x60)**: retail hoists `mov r5,#0; mvn r6,#0; ldr r7,=msg` before the call and pushes r4-r8 (inlined multi-assert shape); simple form is 21 words vs 24.
+- Functions containing relaxation nops (0x8f84, 0xd3d0, 0x2baf0, 0x2b808, 0xbe48 ...) skipped as relaxed-only territory.
+
 ## DllField GetMgr (`0x16c0`) callers, file offsets 0x98000-0xa6000 -- residues (round b)
 
 NEW LEVER (fixes the whole "arg-load width" residue class in `attempted.md`, e.g. 0x93d10 / 0x948f0 / 0x93b30 / 0x94d18 / 0x9aeb8):

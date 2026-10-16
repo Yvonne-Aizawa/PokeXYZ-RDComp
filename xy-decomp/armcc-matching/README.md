@@ -2993,6 +2993,20 @@ Notes — **DllBattle script-command handlers, `0x60000`-`0x90000` (`armcc-r6-b2
 
 Notes — **DllField GetMgr callers, `0x98000`-`0xa6000` (`armcc-r6-f3`, 43 matches):** `0x98000`-`0x9a000`: `0x980fc`, `0x9812c`, `0x98420`, `0x98588`, `0x98b84`, `0x98c24`, `0x98cec`, `0x98f30`, `0x99604`, `0x99638`, `0x9ad9c`, `0x9aeb8`; `0x9b000`-`0x9d000`: `0x9b950`, `0x9bae8`, `0x9bb28`, `0x9be50`, `0x9d214`, `0x9d374`, `0x9d534`, `0x9d564`, `0x9d688`, `0x9d9ec`; `0x9e000`-`0x9f000`: `0x9e018` (float args via `vpush`/`vmov`), `0x9e400`, `0x9e7e4`, `0x9ea94`, `0x9eab8`, `0x9ee48`, `0x9f0e0`, `0x9f188`, `0x9f1fc`; `0x9fe00`-`0xa0400`: `0x9feb4`, `0x9ff34`, `0x9ff64`, `0xa0008`, `0xa02bc`, `0xa02e0`; `0xa0b00`-`0xa1500`: `0xa0be8`, `0xa0c34`, `0xa0cd8`, `0xa0cf4`, `0xa13c4`, `0xa14c0`. **Lever confirmed for the arg-load width class:** declaring the script-command args pointer `volatile int *a` (or reading through `*(volatile int *)`) keeps a full `ldr` plus a separate `uxth` / `sxth` / `and #255`, as retail does (`trick(volatile-load)`); `0x9aeb8` matched as `*(volatile unsigned short *)(p + 4) & 15`. The unmatched handlers in the earlier width-class entries (`0x93d10`, `0x948f0`, `0x93b30`, `0x94d18`, ...) are candidates for a retry with it. The matched range stops at `0xa14c0`; `0x60`-`0xa4` byte callers were mostly not examined.
 
+## 2026-10-16 round b — batch 9 (DllBattle 0x50-0xa0 tier: event triggers x7)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x2924` (0x60, 24/24) | natural | two-owned-object release: member @16 gets vt[4] (shutdown) then vt[1] (delete) and is nulled; member @20 gets vt[1] (delete) and is nulled |
+| `DllBattle` | `0xac16c` (0x34, 13/13) | natural | battle event trigger: when lookup(u8 query(2)) == c, posts event 54 with 0x2000 |
+| `DllBattle` | `0xb8b84` (0x50, 20/20) | **trick(static-helper)** | battle event trigger: when query(3)==c and (u8)query(4)!=31 and check(c), posts helper(66,1) |
+| `DllBattle` | `0xc32e4` (0x58, 22/22) | natural | battle event trigger: when query(3)==c and (u16)query(18) is one of 0x160/0x18f/0x196/0x18c, posts event 50 with 0x1800 |
+| `DllBattle` | `0xc349c` (0x58, 22/22) | natural | battle event trigger: when query(2)==c and (u16)query(30)==4, posts event 51 with helper(query(51)/2, 1) |
+| `DllBattle` | `0xc3a64` (0x54, 21/21) | natural | battle event trigger: when query(3)==c and a lookup on (u16)query(18) returns 1, posts event 52 with helper(query(52), 0x1800) |
+| `DllBattle` | `0xc489c` (0x60, 24/24) | natural | battle event trigger: when event-id query(2)==c, query(3)!=c, query(32)==1 and query(33)<0, stores helper(66,1) through the out pointer |
+
+Notes — **DllBattle 0x50-0xa0 tier (`armcc-r6-b4`):** `0x2924` releases two owned members (`@16` gets vt[4] then vt[1] and is nulled; `@20` gets vt[1] and is nulled); battle **event-trigger predicates** that call the `0x6b91c` query-by-id function and tail-call `0x4ce84` / `0x658d4`: `0xc489c` (fires when query(2)==c, query(3)!=c, query(32)==1, query(33)<0, then stores helper(66,1) through the out pointer), `0xc3a64` (query(3)==c and a lookup on `(u16)query(18)==1`, posts event 52), `0xac16c` (lookup on `(u8)query(2)==c`, event 54), `0xb8b84` (**trick(static-helper)**: a one-use static helper puts the u8 value in r1 as retail does), `0xc349c` (query(2)==c and `(u16)query(30)==4`, event 51), `0xc32e4` (query(3)==c and `(u16)query(18)` in {0x160, 0x18f, 0x196, 0x18c}, event 50). **Large untapped family:** ~330 event-trigger predicates at `0xa5000`-`0xca000` (a scan found ~777 functions of that size tier, ~207 below `0x30000`); those that save only `c`, or only `(d,c)`, match easily — many more should. Those that save both `b` and `c` (`0xa7cd0`, `0xa7188`, `0xc1244`) hit the callee-saved prologue-move swap.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
