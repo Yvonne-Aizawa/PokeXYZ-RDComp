@@ -15,6 +15,16 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle event-trigger predicates -- the prologue-move-order residue (round b; ~45 functions across 0xa5000-0xb8000, plus 0xa7cd0 / 0xa7188 / 0xc1244)
+
+- Scan: 226 non-matched `bl 0x6b91c` callers in 0xad000-0xb8000 alone; the c-only / (d,c) shapes matched (see the batch tables). Everything that must save TWO args across the 0x6b91c call (b+c or c+d; `push {r4,r5,r6,lr}`) fails on the SAME two words and nothing else: retail moves the LOWER arg register first (`mov r5,r1; mov r4,r2` / `mov r4,r2; mov r5,r3`), armcc always emits the higher one first. The register assignment itself is already right.
+- 0xad000-0xb8000: c AND d saved — 0xb67b0 13/15, 0xb6e80 17/19, 0xb47dc 14/16, 0xb6ecc 14/16, 0xb57f8 18/20, 0xb73c8 19/21; b AND c saved — 0xb76c8 14/16 (`if (g(3)==c && h(b)) post(83,1)`), same family 0xb0e94, 0xb0b4c, 0xae96c, 0xb1314 and ~20 more.
+- 0xa5000-0xad000: ~25 functions — 0xa60c8 / 0xa67b4 / 0xa6924 / 0xa6a64 / 0xa6d98 / 0xa7130 / 0xa7788 / 0xa8530 (store-struct-then-0x67b48 family, 0x69f7c alloc), 0xa64bc / 0xa629c / 0xa6b90 / 0xa80a8 / 0xaa608 / 0xab074 (0x544a0 lookup + u16@12 compare), 0xa6504, 0xa79d4, 0xa71f4 (r4=c vs r0=b ordering), 0xa85cc / 0xabb48 / 0xacbc8 / 0xacc94 (c,d), 0xa7e18 (a,c). 0xaa608 also compiles `v==380||v==381` to `mvnne r1,#380` where retail has `subne #256; subsne #125` (a different range-test source shape).
+- Tried on 0xb67b0: local copies of c/d in either order, a struct pointer, nested ifs, unsigned params, an int return, hoisting the d load before the g call (changes the code). None change the move order.
+- 0xa5d60 (and siblings 0xa6c74, 0xa6ce8, 0xa7344, 0xa7aa0 at 0x54; 0xa7e18 at 0x70): `if (query(3)==c && query(58)==K) post(37, h(*(u16*)(a+56), 3))` stays 8/21 — retail saves `mov r4,r0; mov r5,r2` (a first, then c) and later reuses r5 for the literal 3 (`mov r5,#3; ldrh r0,[r0,#56]; mov r1,r5`); armcc puts c in r4 and a in r5. Tried a static helper, a local `k = 3`, a struct, a helper returning the u16.
+- Lead for next time: the retail source probably had a different arg-forwarding shape (an inlined helper taking (b,c) / (c,d) in order), or the odd `mov r5,#3` implies a source-level variable holding 3 allocated into c's dead register — not found.
+- Not attempted (bigger bodies): 0xadce8 (ldrh+cmp `?:` literal-pool pick), 0xb5574, 0xb79c0, 0xb67ec / 0xb68c4 style d-writers, the loop at 0xb6438, the VFP float-scaling pair 0xa7230 / 0xa7598.
+
 ## DllBattle pool-pad candidates that did NOT match (round b)
 
 Scan method: a word-level scan of DllBattle .text for `zero word right after a terminator, followed by a

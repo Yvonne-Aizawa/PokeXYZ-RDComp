@@ -3024,6 +3024,42 @@ Notes — **DllBattle 0x50-0xa0 tier (`armcc-r6-b4`):** `0x2924` releases two ow
 
 (Plus DllField `0xb6844` / `0xb76c8` from the tool batch.) A word-level scan of DllBattle for a zero word after a terminator with a pc-loaded pool word behind it gave 111 start candidates; the DllField scan only found mid-function pools and big (≥ 0xb0 byte) functions. **Policy still pending the user's decision** (promote to `matched/` or keep as its own tier).
 
+## 2026-10-16 round b — batch 10 (DllBattle event-trigger predicates 0xa5000-0xb8000 x29)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0xa63ac` (0x38, 14/14) | natural | battle event trigger: when query(3)==c, posts event 45 with (u8)(query(45)+1) |
+| `DllBattle` | `0xa6adc` (0x38, 14/14) | natural | battle event trigger: when check(u8 query(2), c) holds, posts event 83 with arg 1 |
+| `DllBattle` | `0xa6f28` (0x38, 14/14) | natural | battle event trigger: when query(3)==c, posts event 54 (0x4ce84 veneer) with helper(a) |
+| `DllBattle` | `0xa7304` (0x38, 14/14) | natural | battle event trigger: when query(3)==c, posts event 54 (0x4ce84 veneer) with helper(a) |
+| `DllBattle` | `0xa7af4` (0x40, 16/16) | natural | battle event trigger: when query(3)==c, copies query(31) into a local, calls modifier(&v,1) and posts event 31 with v |
+| `DllBattle` | `0xa8250` (0x48, 18/18) | natural | battle event trigger: when query(3)==c and query(57)>7, posts event 54 with helper(a) |
+| `DllBattle` | `0xa8820` (0x50, 20/20) | natural | battle event trigger: when query(3)==c and lookup((u16)query(18))==2, posts event 50 with helper(a) |
+| `DllBattle` | `0xa8b0c` (0x3c, 15/15) | natural | battle event trigger: when query(4)==c and query(27)==2, posts event 54 with 0x1800 |
+| `DllBattle` | `0xa98f8` (0x50, 20/20) | natural | battle event trigger: when query(3)==c and query(30)==8, copies query(31) into a local, calls modifier(&v,8) and posts event 31 with v |
+| `DllBattle` | `0xaa384` (0x50, 20/20) | natural | battle event trigger: when query(3)==c and lookup((u16)query(18))==1, posts event 50 with helper(a) |
+| `DllBattle` | `0xaa5c4` (0x44, 17/17) | natural | battle event trigger: when query(3)==c and lookup((u16)query(18))==2, posts event 54 with 0x1800 |
+| `DllBattle` | `0xaaa10` (0x38, 14/14) | natural | battle event trigger: when query(3)==c, posts event 54 (0x4ce84 veneer) with helper(a) |
+| `DllBattle` | `0xab3c4` (0x44, 17/17) | natural | battle event trigger: when query(3)==c and lookup((u16)query(18))==1, posts event 54 with 0x1800 |
+| `DllBattle` | `0xab6f8` (0x3c, 15/15) | natural | battle event trigger: when query(2)==c and query(51)>0, posts event 66 with 1 |
+| `DllBattle` | `0xac02c` (0x44, 17/17) | natural | battle event trigger: when lookup((u8)query(3))==c, posts event 39 with (query(39)<<1)&0xffff |
+| `DllBattle` | `0xac0d4` (0x34, 13/13) | natural | battle event trigger: when lookup((u8)query(2))==c, posts event 54 with 0x400 |
+| `DllBattle` | `0xac568` (0x34, 13/13) | natural | battle event trigger: when lookup((u8)query(4))==c, posts event 66 with 1 |
+| `DllBattle` | `0xac5b0` (0x34, 13/13) | natural | battle event trigger: when lookup((u8)query(3))==c, posts event 70 with 1 |
+| `DllBattle` | `0xaf710` (0x34, 13/13) | natural | event predicate: if (g(3) == c) post(60, g(4) & 255) (tail call 0x658d4). Callees: 0x6b91c query, 0x658d4 post veneer. |
+| `DllBattle` | `0xaf958` (0x3c, 15/15) | natural | event predicate: if (g(3) == c && g(83) != 0) post(59, 2) (tail call 0x658d4). Callees: 0x6b91c query, 0x658d4 post veneer. |
+| `DllBattle` | `0xb020c` (0x3c, 15/15) | natural | event predicate: if (g(3) == c && g(21) == 10) post(57, 8) (tail call 0x658d4, no return value). Callees: 0x6b91c query-by-id, 0x658d4 post-event veneer. |
+| `DllBattle` | `0xb09d0` (0x40, 16/16) | natural | event predicate: if (g(3) == c) { v = g(31); adjust(&v, 7); post(31, v) } (tail call 0x658d4). Callees: 0x6b91c query, 0x4b990 in-place adjust helper, 0x658d4 post veneer. |
+| `DllBattle` | `0xb0e58` (0x3c, 15/15) | natural | event predicate: if (g(3) == c && g(34) == 3) post(67, 0) (tail call 0x658d4, no return value). Callees: 0x6b91c query-by-id, 0x658d4 post-event veneer. |
+| `DllBattle` | `0xb2200` (0x48, 18/18) | natural | event predicate: if (d[0] == 2 && g(3) == c && g(22) == 12) post(50, 0x2000) (tail call 0x4ce84; d = context int*). Callees: 0x6b91c query, 0x4ce84 post veneer. |
+| `DllBattle` | `0xb3ad8` (0x40, 16/16) | natural | event predicate: if (g(3) == c) { v = g(31); adjust(&v, 16); post(31, v) } (tail call 0x658d4). Callees: 0x6b91c query, 0x4b990 in-place adjust helper, 0x658d4 post veneer. |
+| `DllBattle` | `0xb420c` (0x44, 17/17) | natural | event predicate: if (g(3) == c && g(61) == 11) post(62, g(62) + 1) (tail call 0x658d4). Callees: 0x6b91c query, 0x658d4 post veneer. |
+| `DllBattle` | `0xb52bc` (0x48, 18/18) | natural | event predicate: if (g(3) == c) { v = g(80) (unsigned); post(49, v < 40 ? 40 : v < 70 ? 80 : 120) } (tail call 0x658d4). Callees: 0x6b91c query, 0x658d4 post veneer. |
+| `DllBattle` | `0xb69b8` (0x3c, 15/15) | natural | event predicate: if (g(4) == c && g(3) == c) post(32, 10) (tail call 0x658d4). Callees: 0x6b91c query, 0x658d4 post veneer. |
+| `DllBattle` | `0xb7b14` (0x3c, 15/15) | natural | event predicate: if (g(3) == c && g(34) == 5) post(67, 0) (tail call 0x658d4, no return value). Callees: 0x6b91c query-by-id, 0x658d4 post-event veneer. |
+
+Notes — **DllBattle event-trigger predicates, `0xa5000`-`0xb8000` (`armcc-r8-ev1` 18 + `armcc-r8-ev2` 11, all natural):** every one wraps the `0x6b91c` query-by-id getter and tail-calls the `0x658d4` / `0x4ce84` post veneer. ev2 (`0xad000`-`0xb8000`): `0xaf710` `if (g(3)==c) post(60, g(4)&255)`; `0xaf958` `g(3)==c && g(83)!=0` posts (59, 2); `0xb020c` `g(3)==c && g(21)==10` posts (57, 8); `0xb0e58` / `0xb7b14` `g(3)==c && g(34)==3 / 5` posts (67, 0); `0xb69b8` `g(4)==c && g(3)==c` posts (32, 10); `0xb420c` `g(3)==c && g(61)==11` posts (62, g(62)+1); `0xb52bc` posts (49, a 40/80/120 value tiered on unsigned `g(80)`); `0xb09d0` / `0xb3ad8` read `g(31)`, call the in-place adjust helper `0x4b990` with (&v, 7 / 16), post(31, v); `0xb2200` `d[0]==2 && g(3)==c && g(22)==12` posts (50, 0x2000) via `0x4ce84`. ev1 (`0xa5000`-`0xad000`): `0xa63ac` posts 45 with `(u8)(query(45)+1)`; `0xa6adc` `check((u8)query(2), c)` posts 83; `0xa6f28` / `0xa7304` / `0xaaa10` post 54 with `helper(a)`; `0xa7af4` / `0xa98f8` (`query(30)==8`, `modify(&v,8)`) post 31; `0xa8250` (`query(57) > 7`); `0xa8820` / `0xaa384` (`lookup((u16)query(18))` is 2 / 1, post 50); `0xaa5c4` / `0xab3c4` / `0xa8b0c` post 54 with `0x1800`; `0xab6f8` `query(51) > 0` posts 66; `0xac568` / `0xac5b0` / `0xac0d4` / `0xac02c` `lookup((u8)query(N))==c` posts 66 / 70 / 54 (`0x400`) / 39 (`(query(39)<<1)&0xffff`). **The ~45-function two-saved-arg group is one residue class** (prologue-move order — see `attempted.md`).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
