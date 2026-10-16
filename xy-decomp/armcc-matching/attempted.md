@@ -15,6 +15,19 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllField@0xcae50 (size 0x6c; byte-sibling 0xcb41c: constants 75/77/78, bits 0x100000/0x200000)
+
+- What it is: state handler — `fa(this->[68], 1); if (fb(p+184) && (r = fc(p+184)) != 83) { if (r == 85 || r == 86) flags(+164) |= 0x1000000, return 1; else return 0 } else flags |= 0x2000000, return 1`.
+- Tried: goto-shared-store variant (`int v; ... v = f|0x1000000; goto st; ... st: *(int*)(s+164)=v; return 1;`) — best 25/27; the plain nested-if version (store duplicated per arm) is 19/27; an `int ret` variable pushes to r5 (worse).
+- Stuck on: retail's `return 0` path does `movne r0,#0; bne <final pop>` (shares the epilogue pop at the very end); mine emits `movne; beq st; pop {r4,pc}` (inline pop for the 0 path) — two words differ (branch-vs-conditional-execution class).
+- Lead for next time: none yet.
+
+## DllBattle "getter via 0x5dc68 / 0x707d4" cluster (0x7b20c `ldrh` +0x160, 0x835f8 `ldrh` +0x158, 0x7b2e4, 0x7bec4, 0x81544, 0x81568, 0x81594; tail forms 0x7a11c, 0x7b320, 0x78488, 0x7957c)
+
+- What it is: `fn(o, *p)`, then `fb(o->+8, result)`, then read a field of the result (same shape as the logged 0x78a24).
+- Stuck on: best 4/10 — retail loads `o->+8` after the first call straight into r0 and moves the call result into r1; every phrasing hoists `ldr r2,[r4,#8]` before the call and adds `mov r0,r2`.
+- Lead for next time: the second call's first argument probably isn't a plain field load of `o` (accessor or different arg order).
+
 ## DllBattle small push-functions, 0x30000-0x60000 sweep (unmatched)
 
 - 0x422e8 (0x24): `fnA(o->m@0xafc); o->y@0x876 = 0; o->x@0x874 = 1`. Retail `mov r1,#0; mov r0,#1; strb r1; strb r0` (zero in r1); ours reuses r0 — zero-register residue. Tried store orders / duplicate store.

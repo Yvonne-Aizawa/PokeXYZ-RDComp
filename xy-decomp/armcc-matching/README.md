@@ -2349,6 +2349,23 @@ Notes: DllBattle `0x30000`-`0x60000` has ~55 more candidates (0x14-0x60 bytes); 
 
 Note: the this-adjusting dtor thunks start at `0xc9c48`, `0xc9c5c`, `0xc9c70` (this-0xdc), `0xc9c84`, `0xc9c98`, `0xc9cac` (this-0xe8) — the `sub r0,#N` is the first instruction of each thunk (the earlier lead offsets were +4 each); each is `del(dtor(p - N))`. `0xa9e08` is a sibling of the 28 forwarders but passes a constant stack arg 1 to the local function `0xa9e1c`. `0xc8f80` is `uint16 f(o){ return g(o->x_0xc); }`; `0xc6d24`/`0xc6d38` are ctor stages (base ctor, then `this[0x48] = this`). The tail of the module past `0xc0000` was not scanned further.
 
+## 2026-10-16 round a — batch 7 (DllBattle 0x8b2e8 family, DllField state handlers)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x8b2e8` (0x28, 10/10) | natural | if member at this+232 is non-null: fa(member) then tail-call fb(arg2); else return |
+| `DllBattle` | `0x8bcb8` (0x28, 10/10) | natural | if member at this+236 is non-null: fa(member) then tail-call fb(arg2); else return |
+| `DllBattle` | `0x8db3c` (0x28, 10/10) | natural | if member at this+216 is non-null: fa(member) then tail-call fb(arg2); else return |
+| `DllBattle` | `0x8e858` (0x28, 10/10) | natural | if member at this+232 is non-null: fa(member) then tail-call fb(arg2); else return |
+| `DllBattle` | `0x8f210` (0x28, 10/10) | natural | if member at this+224 is non-null: fa(member) then tail-call fb(arg2); else return |
+| `DllBattle` | `0x8fa38` (0x28, 10/10) | natural | if member at this+224 is non-null: fa(member) then tail-call fb(arg2); else return |
+| `DllField` | `0xc9060` (0x30, 12/12) | natural | Calls two imports (second returns a flag); if the flag is 0 and the pointer at this+68 is non-null, tail-calls an import on that pointer, else returns. Identical bytes to 0xca54c. |
+| `DllField` | `0xca54c` (0x30, 12/12) | natural | Calls two imports (second returns a flag); if the flag is 0 and the pointer at this+68 is non-null, tail-calls an import on that pointer, else returns. Identical bytes to 0xc9060. |
+| `DllField` | `0xcbc60` (0x3c, 15/15) | natural | State-handler step: calls an import on this->[68] (arg 1), then reads the state id of the object at this->[68]+184; if not 103 returns 36, else calls an import on this and returns 1. |
+| `DllField` | `0xcc474` (0x58, 22/22) | natural | State-handler step: calls an import on this->[68] (arg 1); if byte +145 is set and the state id at this->[68]+184 is 104, sets bit 0x80000 in flags +168, clears +148 and returns 1; otherwise returns 38. |
+
+Notes: **DllBattle `0x8b2e8` family** (0x28 incl. the trailing `pop {r4,pc}`; a 0x24 compile shows 9/9 and misses that last word): `if (this->member@N) { fa(member); } return fb(arg2)`-style member-gated tail call; N = +232 (`0x8b2e8`, `0x8e858`), +236 (`0x8bcb8`), +216 (`0x8db3c`), +224 (`0x8f210`, `0x8fa38`). **Same-bytes siblings not yet compiled** (member offset in brackets; same source with a different `pad[]` should match): `0x90590` [224], `0x910d4` [244], `0x92874` [228], `0x935cc` [228], `0x949f0` [228], `0x954a0` [244], `0x96744` [244], `0x97960` [216], `0x98a04` [232], `0x993b8` [232], `0x99ff4` [220], `0x9a9b0` [280], `0x9c5dc` [224]. **DllField `0xc9060`/`0xca54c`** (0x30): two imports, if the second returns 0 and `this->[68]` is non-null tail-calls an import on it. `0xcbc60` / `0xcc474`: state-handler steps (id 103 / 104). The "getter via 0x5dc68/0x707d4" cluster (DllBattle `0x7b20c`, `0x835f8`, `0x7b2e4`, `0x7bec4`, `0x81544`, `0x81568`, `0x81594`, tail forms `0x7a11c`, `0x7b320`, `0x78488`, `0x7957c`) failed — see `attempted.md`. DllField `0xcf000`-`0xd0000` and `0xe1c00`-`0xe2000` tiers look untried; ~374 candidates at 0x2c-0x70 bytes remain above `0x90000`.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
