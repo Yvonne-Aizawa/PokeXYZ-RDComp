@@ -15,6 +15,39 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle@0x5fa8c / 0x5faa0 / 0xc9e68 / 0x747fc -- field-copy helpers (leaf, `bx lr`)
+
+- What they are: 0x5fa8c (0x14) `ldr r2,[r1]; str r2,[r0]; ldrh r3,[r1,#4]; strh r3,[r0,#4]`; 0x5faa0 (0x14) the same with `ldrb/strb` at +4 (untested); 0xc9e68 (0x1c) u32 + u16 + u8; 0x747fc (0x14) `ldr r2,[r1]; ldr r3,[r1,#4]; str r2,[r0]; str r3,[r0,#4]`.
+- Tried: direct casts, locals at the top, member-wise struct copies, struct assignment, loads-first locals.
+- Stuck on: right opcodes but armcc reuses r1/r2 for the second temp where retail uses a fresh r3 (and ip for the third) — 3/5 and 3/7. 0x747fc: retail hoists both loads before the stores; plain `d[0]=s[0];d[1]=s[1]` gives ldr/str/ldr/str (2/5) and the locals-first / struct-assign forms collapse to `ldm r1,{r1,r2}; stm r0,{r1,r2}`.
+- Lead for next time: retail probably inlined these from a larger function (temps never recycled); an isolated compile may not reproduce the allocation.
+
+## DllField@0x72534 (size 0x20; same bytes at 0x72554, 0x7dbc4 tail, 0x70f58 variant)
+
+- What it is: 44-byte struct copy from src+12 — `add r2,r0,#12; vldmia r2,{s0-s7}; vstmia r1,{s0-s7}; ldrd r2,[r0,#44]; ldr r0,[r0,#52]; str r0,[r1,#40]; strd r2,[r1,#32]; bx lr`.
+- Tried (armcc -O2 -Otime): plain struct assignment (`float f[11]`; `float f[8]` + 3 floats; `long long` + int tail; V4 sub-structs) -> push/ldm/stm cores, 1/8; `float[8]` struct assign + 3 scalar copies -> ldm/stm + vldr/vstr, 0/8.
+- Stuck on: retail uses VFP `vldmia` for the first 8 words and an LDRD/STRD pair for the next 2; no assignment form produced that. 0x72554/0x7dbc4/0x70f58 skipped (same class).
+- Lead for next time: none yet.
+
+## DllBattle@0xf420 (0x1c), 0xf3fc (0x24), 0xca9c (0x20) -- u8-masked arg wrappers
+
+- What they are: virtual-override wrappers `fn(this, a, int *args) { import(this->@0x40, args[0] & 0xff [, args[1]...]); return 1; }` (f3fc: two masked args; ca9c: `ldm r2,{r1,r3}` then `and r1,r1,#255`, second arg unmasked).
+- Tried: `& 0xff`, `(unsigned char)` casts, `unsigned char` callee params, local copy, struct copy `S s = *args`, by-value struct param.
+- Stuck on: armcc narrows the load to `ldrb r1,[r2]` and drops the `and` (5/7 on f420); retail does a full-word `ldr` then `and r1,r1,#255` after the `ldr r0`. Only `volatile unsigned *args` reproduces f420 (7/7) — a `trick(volatile-load)` not saved under `matched/`.
+- Lead for next time: the original probably copies the whole arg struct (ldm for ca9c) with a u8 narrowing at the call; a natural form that defeats `ldrb` narrowing is unknown.
+
+## DllBattle@0x4aa9c / 0x51c28 (bit-test getters), 0x4c818 / 0x4ca4c (bitset tests)
+
+- 0x4aa9c (0x10) `ldrb [27]; and #64; lsr #6` and 0x51c28 (`#32`, `lsr #5`): tried `(p[27]&64)>>6`, `/64`, `(p[27]>>6)&1`, uchar/uint/int return, volatile, bitfield struct (`:1` at bit 6/5), `?1:0`. armcc always folds to `lsl #25; lsr #31`, `mov #1; and r0,r1,r0,lsr#6`, or `ands/movne`, never the plain `and; lsr` pair.
+- 0x4c818 (0x2c) / 0x4ca4c (+0x69 instead of +0x66): bitset test `base = this+0x166; (1<<(i&7)) & base[i>>3]`. Target keeps `lsr r0,r1,#3` as a separate index register (`ldrb r2,[r2,r0]`), `mov r3,#1; lsl r0,r3,r1; and #255; ands r0,r0,r2; movne #1`. Best 4/11 (local `a=p+0x166; k=i>>3; m=1<<(i&7); b=a[k]`); static-helper and fused forms 1-3/11.
+- Lead for next time: a source that yields the unfolded and-then-shift.
+
+## DllBattle@0x4b804 / 0x4bfa8 (0x18 each), 0x7960c (0x18)
+
+- 0x4b804 / 0x4bfa8: `return g() != 18` / `!= 10`; retail uses `push {lr}` / `pop {pc}`, our compile gives `push {r4,lr}` / `pop {r4,pc}`. The cmp and movne/moveq bodies already match (order of the two conditional moves differs in the `if (g()==18) return 0; return 1;` form); three phrasings failed to get the single-register push.
+- 0x7960c: `ldm r1,{r1,r2}; uxth r2,r2; bl; eor r0,r0,#1` — by-value struct / struct with a `short` / local copy / mask all fail (`ldm` without `uxth`, or an extra instruction).
+- Lead for next time: none yet.
+
 ## "Release member, zero via r1" destructor class (DllPuzzle@0xb3fc, DllHeading@0x87e4/0x881c, DllBox@0x1dfac/0x1df3c, DllGts@0x9824)
 
 - Status 2026-10-15: the leaf variant is cracked (DllField@0xae58/0xe3fc/0xe380, see `matched/` — `trick(live-r1-passthrough)`); the dtor shape is **not**.

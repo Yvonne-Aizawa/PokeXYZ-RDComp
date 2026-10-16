@@ -2100,6 +2100,76 @@ Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), D
 | `DllBattle` | `0xc86c8` (0xc, 3/3) | natural | getter: returns the u16 field at this+0x15c |
 | `DllBattle` | `0xc8754` (0xc, 3/3) | natural | getter: returns the u16 field at this+0x150 |
 
+## 2026-10-16 round a — batch 2 (DllBattle + DllField families)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x2984` (0x40, 16/16) | natural | lazy-member creator: n = new(12, this->@0x20); if (n) { n->@4 = n->@8 = 0; n->vt = <vtable> } this->@0x14 = n; n->@4 = this (back-pointer). Pool word is a relocation. Masked match 16/16. |
+| `DllBattle` | `0xc074` (0x30, 12/12) | natural | virtual-override: ctx = *this; sets ctx bytes @0x7d8/@0x7d9 = 1 and ctx->@0x7e0 = ctx->@0x10->@0x40, calls import(10), returns 1. Masked match 12/12. |
+| `DllBattle` | `0xea24` (0x18, 6/6) | natural | virtual-override wrapper: calls import(this->@0x40, 0) and returns 1 (true). Masked match 6/6. |
+| `DllBattle` | `0x16aa0` (0x14, 5/5) | natural | virtual-override wrapper: calls import(this, this->@0x10) and returns 1 (true). Masked match 5/5. |
+| `DllBattle` | `0x16bf0` (0x34, 13/13) | natural | virtual-override: calls import(this+0x88, this, 0) then import(this+0x428, this, 1) (two embedded sub-objects bound to this), returns 1. Masked match 13/13. |
+| `DllBattle` | `0x44d4c` (0x18, 6/6) | natural | calls a helper and returns its logical negation (1 if it returned 0). |
+| `DllBattle` | `0x4d348` (0x1c, 7/7) | natural | looks up an object via this->[2], returns its byte field at +25, or 31 if none. |
+| `DllBattle` | `0x5f848` (0x18, 6/6) | natural | calls a helper and returns true if it returned 0. |
+| `DllBattle` | `0x71840` (0x10, 4/4) | natural | zero-inits a 6-byte struct: u32 at +0, u16 at +4 |
+| `DllBattle` | `0x742b0` (0x10, 4/4) | natural | calls a helper (result discarded) and returns 0. |
+| `DllBattle` | `0x76384` (0x14, 5/5) | natural | counted u32 array getter, i < p[24] ? ((u32*)p)[i] : 0 (twin of 0x5daf8) |
+| `DllBattle` | `0xc5c18` (0x28, 10/10) | natural | clears a 26-byte struct: zero byte at +24 and +25, then six zero u32 stores (+0..+20) |
+| `DllBattle` | `0xc87a0` (0x14, 5/5) | natural | counted byte array getter, i < p[25] ? p[i] : 6 |
+| `DllBattle` | `0xc9e30` (0x14, 5/5) | natural | zero-inits a 10-byte struct: u32 at +0, u32 at +4, u16 at +8 |
+| `DllBattle` | `0xc9e44` (0x14, 5/5) | natural | zero-inits a 12-byte struct: three zero u32 stores (+0,+4,+8) |
+| `DllBattle` | `0xc9e58` (0x10, 4/4) | natural | zero-inits a 5-byte struct: u32 at +0, u8 at +4 |
+| `DllField` | `0x7f40` (0x1c, 7/7) | natural | zeroes four floats at this+4..+16 (vldr s0 from the pool word, 4x vstr); size includes the literal-pool word. |
+| `DllField` | `0x9888` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+28/this+32 (add r0,#28; stm). |
+| `DllField` | `0x132b8` (0x1c, 7/7) | natural | Predicate: passes this->field@0x24 to a callee and returns its logical negation (1 if result is 0). |
+| `DllField` | `0x14c60` (0x1c, 7/7) | natural | Predicate: passes this->field@0x24 to a callee and returns its logical negation (1 if result is 0). |
+| `DllField` | `0x1959c` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+28/this+32 (add r0,#28; stm). |
+| `DllField` | `0x1bd34` (0x14, 5/5) | natural | Call+return helper: calls an import veneer with this, returns this. |
+| `DllField` | `0x28b28` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x28dc4` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x29060` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x29080` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x29420` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x29ac0` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x29e20` (0x10, 4/4) | natural | vptr setter: stores a class vtable address (pool word, relocated at link) into this[0]; size includes the pool word. |
+| `DllField` | `0x2aec4` (0x10, full (masked)) | natural | init: stores the owner pointer arg at this+24 and caches owner->field(+408) at this+28. |
+| `DllField` | `0x334d8` (0x20, 8/8) | natural | Destructor stage: calls an import veneer (this, 1), then another on the sub-object at this+108, returns this. |
+| `DllField` | `0x3424c` (0x10, full (masked)) | natural | init: stores the owner pointer arg at this+24 and caches owner->field(+408) at this+36. |
+| `DllField` | `0x343b4` (0x10, full (masked)) | natural | init: stores the owner pointer arg at this+24 and caches owner->field(+408) at this+28. |
+| `DllField` | `0x387c0` (0x10, full (masked)) | natural | init: stores the owner pointer arg at this+24 and caches owner->field(+408) at this+32. |
+| `DllField` | `0x3e5c8` (0x10, full (masked)) | natural | init: stores the owner pointer arg at this+24 and caches owner->field(+408) at this+32. |
+| `DllField` | `0x417f8` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+44/this+48 (add r0,#44; stm). |
+| `DllField` | `0x41f24` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+28/this+32 (add r0,#28; stm). |
+| `DllField` | `0x42f7c` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+28/this+32 (add r0,#28; stm). |
+| `DllField` | `0x4344c` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+28/this+32 (add r0,#28; stm). |
+| `DllField` | `0x444f0` (0xc, full (masked)) | natural | setter: stores arg1/arg2 into the adjacent int pair at this+28/this+32 (add r0,#28; stm). |
+| `DllField` | `0x4a408` (0x18, 6/6) | natural | range predicate: returns (this->field4 - 6) <= 3 unsigned, i.e. field4 in 6..9. |
+| `DllField` | `0x57d1c` (0x18, 6/6) | natural | range predicate: returns (this->field4 - 4) <= 3 unsigned, i.e. field4 in 4..7. |
+| `DllField` | `0x57d54` (0x14, 5/5) | natural | predicate: returns this->field4 == 7. |
+| `DllField` | `0x5ee58` (0x14, 5/5) | natural | Virtual-override stub: ignores this, calls an import veneer with arg2->f4 (the second argument's field at offset 4) and returns 0. |
+| `DllField` | `0x74dd8` (0x10, 4/4) | natural | kind setter (=2), returns sub-record at arg1+276 |
+| `DllField` | `0x74de8` (0x10, 4/4) | natural | kind setter (=3), returns sub-record at arg1+296 |
+| `DllField` | `0x74df8` (0x10, 4/4) | natural | kind setter (=3), returns sub-record at arg1+308 |
+| `DllField` | `0x74e08` (0x10, 4/4) | natural | kind setter (=3), returns sub-record at arg1+320 |
+| `DllField` | `0x74e18` (0x10, 4/4) | natural | kind setter (=4), returns sub-record at arg1+332 |
+| `DllField` | `0x7f628` (0x10, 4/4) | natural | table getter: u16 at +22 from 12-byte entry [i] of r3 table |
+| `DllField` | `0x7f65c` (0x10, 4/4) | natural | table getter: u16 at +8 from 12-byte entry [i] |
+| `DllField` | `0x7f678` (0x10, 4/4) | natural | table getter: u16 at +20 from 12-byte entry [i] |
+| `DllField` | `0x7fb78` (0x5c, 23/23) | natural | initializer: zeroes two u16, 11 floats at +4..+0x2c, int +0x30, float +0x34, sets int +0x38 = 15, zeroes +0x3c/+0x40; size includes the pool word. |
+| `DllField` | `0x84e54` (0x18, 6/6) | natural | Bool getter: returns (Import(this->f12) != 0), i.e. loads the pointer at offset 12, passes it to an import veneer and normalises the result to 0/1 (cmp/movne). |
+| `DllField` | `0x948d8` (0x18, 6/6) | natural | Field-chain getter: loads this->f68 (0x44), calls a no-arg import veneer for its side effect (result unused), then returns the byte at ((f68)->f144)+330. |
+| `DllField` | `0x98bf0` (0x10, 4/4) | natural | Negated predicate: calls an import veneer with this unchanged and returns its result XOR 1 (logical not of a boolean getter). |
+| `DllField` | `0xa0024` (0xc, 3/3) | natural | getter this->inner(+68)->u8(+160) |
+| `DllField` | `0xa0bdc` (0xc, 3/3) | natural | getter this->inner(+68)->int(+152) |
+| `DllField` | `0xe4878` (0x10, 4/4) | natural | Call+return helper: forwards this to an import veneer (void result discarded) and returns the constant 12. |
+
+Notes:
+- **DllField vptr setters** (`extern char VT[]; *p = VT;`, 0x10 incl. the pool word): the offsets in the earlier list were the *preceding pool word*; the functions start 4 bytes later — `0x28b28`, `0x28dc4`, `0x29060`, `0x29080`, `0x29420`, `0x29ac0`, `0x29e20`.
+- **DllField table getters at +20/+22** reach past the 12-byte stride into the next entry, so the `t[i].k` form of `0x7f60c` can't express them: use `struct E { char pad[12]; }` and `*(unsigned short *)((char *)&t[i] + N)`.
+- Open DllField: tail-call thunks to `0x16c0`/`0x6d64c` (e.g. `0x9d9d4`, `0x92318`, `0x9e904`, `0x9ea4c`, `0x9ea64`, `0x9ea7c`, `0x9ecd8`, `0x9ecf0`); the `bl; mov r0,#0/#1` family (`0x945d4`, `0x97ce0`, `0x9e594`, `0x95454`, `0xa50c4`); `push {lr}` leaf stubs `0x4a564`, `0x4ebd8`. ~25 push-with-lr+call candidates below `0x40000` were outside `matched/`.
+- Open DllBattle: `0x2f34` (same shape as `0x2984`, `this->@0x1c`/`@0x10`), `0x2da0`/`0x2dd8` (dtor-style, free member +0x14), `0x5faa0` (u32+u8 copy; same residue expected), `0x4ca4c` (bitset test).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
