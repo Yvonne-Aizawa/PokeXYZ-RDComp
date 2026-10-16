@@ -1695,7 +1695,7 @@ Kinds (find them all with
 |---|---|---|
 | `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 10 (globals-init family, incl. DllSalon@0xdd0) |
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
-| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54, DllBattle@0x2b9dc |
+| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54, DllBattle@0x2b9dc, 0x75050, 0x74ff8, 0x750a4 |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
 | `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68, DllBattle@0x7a780 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
@@ -2473,6 +2473,16 @@ Not matched (see `attempted.md`): nested `0x865cc` call + conditional tail (`0x5
 
 Notes — **DllBattle push-less leaf families (`armcc-r3-b4`):** float splat setters `x=y=z=v`, `+0x4c (u8) = flag` (`0x29abc`, `0x3357c`, `0xc5dd8`); vec3-by-value setters with `+0x4c = 1` (`0x12704` +4, `0x12af8` +16, `0x12b24` +28, `0x12a30` +52); 8-byte struct copy from `arg3->+N` into `this->+0x730`, `+0x72c (u8) = arg4` (`0x3c10c`..`0x3c184`, N = 164..204 step 8); `==N` boolean getters (`0x762f4` `+0x694 == 3`, `0x81638` `+0x10 == 6`, `0x3d21c` `+7 != 1` — matches only as `if (v == 1) return 0; return 1;`, a spelling choice); `o->v[i & 1]` indexed getters (`0xc7304`, `0xc73f4`); `ldrsb` getters (`0xc8fec`, `0xc900c`); `0x2b9dc` writes (-94.0f, -54.0f) to `arg2->{x,y}` (**trick(redundant-local)**: named locals `a`, `b` get armcc to emit one `vstmia` instead of two `vstr`).
 Not matched: conditional-store chain (`0x41f94`, `0x434ec`, `0x439d4`, `0x3c960`, `0x43958`; best 5/8), ldm/strd vec3 copies (`0x126ec`, `0x12864`, `0x128d4`, `0x12a00`, `0x12ae0`, `0x12b0c`; 2/6, field-copy residue). `0x4b9cc`, `0x76ce8`, `0x56a10`, `0x56a38`, `0x569fc`, `0x56a48`, `0x56a58` are tail blocks / case arms of larger functions, not standalone — the enclosing functions are the real candidates.
+
+## 2026-10-16 round a — batch 11 (DllBattle 0x60000 range, 3 tricks)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x74ff8` (0x58, 22/22) | **trick(redundant-local)** | if f18e4(h,0,1) then f18ec(h,0,1,0); f34c(h,0,0,0); return 1 else 0, h = this+0xd38 handle. |
+| `DllBattle` | `0x75050` (0x54, 21/21) | **trick(redundant-local)** | three calls on the handle at this+0xd38 (18ec(h,0,0,0); 34c(h,0,0,1); 18f4(h,0,1,1,1)), handle reloaded each call. |
+| `DllBattle` | `0x750a4` (0x84, 33/33) | **trick(redundant-local)** | handle (this+0xd38) call pair, then converts an 8-byte {int,int} table entry [i] to a float vec (3-float array) and passes it to a third call. |
+
+Notes — **DllBattle `0x60000`-`0x78000` (`armcc-r3-b1`):** all three are **trick(redundant-local)**: a local `void **pp = &o->fld` reproduces retail's cached field address (using `o->fld` directly gave 2/21 on `0x75050`); `0x750a4` (0x84 incl. the trailing pool word) converts entry [i] of an 8-byte `{int,int}` global table to floats in a `float v[3]` (z unused, lands at sp+4). **Verifier limitation found:** `DllBattle@0x71a2c` matches all 8 code words, but retail has a 0 pad word before the pool constant (function starts at 4 mod 8, pool 8-aligned) which a standalone compile can't reproduce — it would match if `fingerprint_fn.py` tolerated pool-alignment padding (a tool improvement worth making).
 
 ## What this does *not* do yet
 

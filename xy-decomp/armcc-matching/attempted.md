@@ -15,6 +15,13 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle@0x76398 (0x3c), 0x71a2c (0x2c), 0x7198c (0x40), 0x73524 (0x40), 0x77338 / 0x77428 family
+
+- 0x76398: bounded array push (`if (s->n >= 6) f394(0,0,0); s->a[s->n] = v; s->n++`, struct {u32 a[6]; u8 n}). Best 13/15 with `i = s->n; s->n = i+1; s->a[i] = v;`; only diff: retail `add r1,r0,#1; strb r1`, ours `add r2,r0,#1; strb r2` (register-allocation class).
+- 0x71a2c: `k = 0x12c6; if (c->v != k) c->v = k; return f394b8(a, k, c) != 0;` (c = arg3, +0x6c) matches all 8 code words; the only diff is the literal pool — retail has a 0 pad word then the constant (function starts at 4 mod 8, pool 8-aligned), our standalone compile has no pad (10 vs 11 words). Would be a match if the verifier tolerated pool-alignment padding.
+- 0x7198c / 0x73524: `&&` predicate chains (`p && f74420(p,13) && !(p->a&7) && !(p->b&7)`); armcc emits conditional execution (`ldrbeq/tsteq/moveq`) and narrows `&7` loads to `ldrb`; retail uses plain `ldr` + `bne/beq` branches (branch-vs-conditional-execution class; best 8/16, 4/16).
+- 0x77338 / 0x77360 / 0x77398 / 0x773ec / 0x77428 family (`f5dc68(this,*k)` then `f707d4(this->+8, r)` ...): retail does `mov r1,r0` then `ldr r0,[r4,#8]`; armcc emits `ldr r2,[r4,#8]` before the mov (scheduling class; the same cluster as 0x78a24). Best 4/10; 0x77428 also starts with `mov r2,r1`.
+
 ## DllBattle conditional-store chain (0x41f94, 0x434ec, 0x439d4, 0x3c960, 0x43958)
 
 - What it is: `if (g.v != K) g.v = K;` with `g` a pool-address global, `v` at +0x6c.
