@@ -2090,6 +2090,16 @@ Push-less leaf scan (`armcc-decomp-55`): few leaves in DllBox (1), DllBag (1), D
 - `DllField@0xae58` (this+20/+24), `0xe3fc` (this+20/+24) and `0xe380` (this+24/+28) (each 0x10, 4/4, **trick(live-r1-passthrough)**): zero two adjacent ints, retail zeroes through r2. Mechanism: armcc puts the shared zero in the lowest free scratch register after r0 (`this`); retail had r1 live (an incoming arg handed back). An unused extra parameter does NOT keep r1 live; declaring `long long f(T *t, int x)` and returning `((long long)x << 32) | (unsigned)t` does, with zero extra code. **The real signature is unknown — this is the least natural trick form in the tree**; rewrite when the true signature is found.
 - The dtor variant of this class (`DllPuzzle@0xb3fc`, `DllHeading@0x87e4`/`0x881c`, `DllBox@0x1dfac`/`0x1df3c`, `DllGts@0x9824`) is still open, but its instruction ordering is solved (`void **vt = VT; void *m = o->f14; o->vptr = vt; if (m) {...}`); only the zero register differs. See `attempted.md`.
 
+## 2026-10-16 round a — batch 1 (DllBattle getters, all natural)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x1cc04` (0xc, 3/3) | natural | returns the address of the embedded sub-object at this+0xca4 (add 0xc00; add 0xa4) |
+| `DllBattle` | `0x4c278` (0xc, 3/3) | natural | getter: returns the u16 field at this+0x162 |
+| `DllBattle` | `0x4c7fc` (0xc, 3/3) | natural | getter: returns the u16 field at this+0x160 |
+| `DllBattle` | `0xc86c8` (0xc, 3/3) | natural | getter: returns the u16 field at this+0x15c |
+| `DllBattle` | `0xc8754` (0xc, 3/3) | natural | getter: returns the u16 field at this+0x150 |
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
