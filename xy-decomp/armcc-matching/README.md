@@ -2715,6 +2715,91 @@ Notes: `DllBattle@0x4344c` matched (natural; `if (r == 103) return 0; return r =
 
 Notes — **DllField `0xb0000`-`0xd0000` (`armcc-r6-f4`):** the 25 secondary-base deleting-dtor stages (`0xb1a90`, `0xb1b80`, `0xb1c94`, `0xb22e4`, `0xb2504`, `0xb282c`, `0xb2974`, `0xb2e04`, `0xb32e8`, `0xb36cc`, `0xb59c8`, `0xb5a7c`, `0xb7b84`, `0xb7e90`, `0xb8148`, `0xb86b4`, `0xb8740`, `0xb8df0`, `0xba8dc`, `0xbc358`, `0xbc5a4`, `0xc0028`, `0xc0e84`, `0xc1ef0`, `0xc25e0`; size 0x30) are the same shape as `0xb1bb8.cpp` with a tail call to `operator delete` on `g(this+8)-8` (inline-member `Reset()` + volatile vptr store). State-handler steps (size 0x48): `0xcf44c` (n=11, `strb` before `strh`), `0xcf880` (1), `0xcfcd0` (6), `0xcfde4` (0), `0xcfee0` (8) call A/B on `this->[+112]` with n, clear halfword `[+0x102]` and byte `[+260]`, return 1; `0xce874` (0x50) is the same step with n=7 and two extra byte clears. **Same-template siblings not yet saved** (outside that agent's range): `0xd0460` (n=5), `0xd04a8` (4), `0xd05bc` (9), `0xd0604` (3), `0xd064c` (2). `0xca1a8` needs the arg declared `int`, not `unsigned char`, to get retail's `movs r4,r1; mov r5,r0` order. `0xcff28` (0x60, float handler, **trick(redundant-local)**: the local `p = t+0x100` pins the early `add r5` and `strh [r5,#2]`). `0xc2b00` contains a relaxation `nop` (relaxed-only, skipped).
 
+## 2026-10-16 round b — batch 2 (DllBattle 0x90000+ families x73)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0xa48a0` (0x14, 5/5) | natural | singleton stub: `*p = 54; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa53cc` (0x14, 5/5) | natural | singleton stub: `*p = 1; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa5408` (0x14, 5/5) | natural | singleton stub: `*p = 2; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa5de0` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 1) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa5e28` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 9) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6080` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 12) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6120` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,3,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6140` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 3) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6188` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,0,1)` (0xa6120 family) |
+| `DllBattle` | `0xa6254` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 5) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa62f0` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,16,0)` (0xa6120 family) |
+| `DllBattle` | `0xa638c` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,9,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6454` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,13,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6474` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,1,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6494` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,2,0)` (0xa6120 family) |
+| `DllBattle` | `0xa65c8` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 6) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6610` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,15,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6630` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,10,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6650` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 8) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6794` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,11,0)` (0xa6120 family) |
+| `DllBattle` | `0xa68e4` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,4,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6904` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,6,0)` (0xa6120 family) |
+| `DllBattle` | `0xa697c` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,14,0)` (0xa6120 family) |
+| `DllBattle` | `0xa699c` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 13) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6abc` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,7,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6bec` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,8,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6c0c` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,17,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6c2c` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 15) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6cc8` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,12,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6d50` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 10) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa6df0` (0x20, 8/8) | **trick(redundant-local)** | forwarder `fnX(a,b,c,d,5,0)` (0xa6120 family) |
+| `DllBattle` | `0xa6e10` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 5) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa70e8` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 16) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa72bc` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 11) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa7398` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 17) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa743c` (0x14, 5/5) | natural | singleton stub: `*p = 3; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa7450` (0x14, 5/5) | natural | singleton stub: `*p = 5; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa77e4` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 11) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa78c4` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 7) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa7b98` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 14) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa8058` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 13) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa8170` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 10) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa82b8` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 4) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa8940` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 10) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa8d00` (0x14, 5/5) | natural | singleton stub: `*p = 7; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa9268` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 0) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa92b0` (0x48, 18/18) | natural | `if (g(3) == c && g(22) == 2) fnB(50, fnC(a));` double-guarded report helper (0xa5de0 family, constant-tweak sibling) |
+| `DllBattle` | `0xa935c` (0x14, 5/5) | natural | singleton stub: `*p = 8; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa93fc` (0x14, 5/5) | natural | singleton stub: `*p = 4; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xa9410` (0x14, 5/5) | natural | singleton stub: `*p = 6; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xad370` (0x14, 5/5) | natural | singleton stub: `*p = 9; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xb8dcc` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xb9dbc` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xb9ee4` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xba38c` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xbb244` (0x2c, 11/11) | natural | guarded tail call `if (g(3) == c) fnY(a);` |
+| `DllBattle` | `0xc0114` (0x2c, 11/11) | natural | guarded report helper `if (g(2) == c) fnA(22, 0);` (0xa5db4 family) |
+| `DllBattle` | `0xc0700` (0x2c, 11/11) | natural | guarded report helper `if (g(4) == c) fnA(66, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc09f8` (0x2c, 11/11) | natural | guarded report helper `if (g(4) == c) fnA(66, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc11c0` (0x2c, 11/11) | natural | guarded report helper `if (g(4) == c) fnA(72, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc12a8` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xc1990` (0x2c, 11/11) | natural | guarded report helper `if (g(4) == c) fnA(66, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc1a3c` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xc1ebc` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xc239c` (0x2c, 11/11) | natural | guarded report helper `if (g(4) == c) fnA(83, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc23c8` (0x2c, 11/11) | natural | guarded report helper `if (g(3) == c) fnA(83, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc24d4` (0x14, 5/5) | natural | singleton stub: `*p = 11; return &global;` (pool word = relocated address). Weak evidence; one representative per N. |
+| `DllBattle` | `0xc3724` (0x2c, 11/11) | natural | guarded tail call `if (g(2) == c) fnY(a);` |
+| `DllBattle` | `0xc3d64` (0x2c, 11/11) | natural | guarded report helper `if (g(3) == c) fnA(76, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc4170` (0x2c, 11/11) | natural | guarded report helper `if (g(2) == c) fnA(66, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc46dc` (0x2c, 11/11) | natural | guarded report helper `if (g(3) == c) fnA(70, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc5640` (0x2c, 11/11) | natural | guarded report helper `if (g(3) == c) fnA(83, 1);` (0xa5db4 family) |
+| `DllBattle` | `0xc566c` (0x2c, 11/11) | natural | guarded report helper `if (g(3) == c) fnA(66, 1);` (0xa5db4 family) |
+
+Notes — **DllBattle `0x90000`+ families (`armcc-r6-b3`):**
+- **Singleton stubs, 11 representatives (weak evidence, size 0x14):** `*p = N; return &global;` — `0xa48a0` (N=54), `0xa53cc` (1), `0xa5408` (2), `0xa743c` (3), `0xa93fc` (4), `0xa7450` (5), `0xa9410` (6), `0xa8d00` (7), `0xa935c` (8), `0xad370` (9), `0xc24d4` (11). The pool word is a relocated address (zero in the unlinked CRO), so pool-word roles can't be told apart; one representative per N was saved and the sibling offsets are listed only in each pending note's text (not saved, to avoid inflating the count with weak evidence). Not matched: `0xbbfd0` (the N=2 variant with a different pool offset, `ldr [pc,#12]`).
+- **Double-guarded report helper (23 sites, 0x48, 18/18):** `if (g(3) == c && g(22) == K) fnB(50, fnC(a));` — only K differs (`0xa5de0`..`0xa92b0`).
+- **Stack-arg forwarder (18 sites, 0x20, 8/8, `trick(redundant-local)`):** `fnX(a,b,c,d,X,Y)`; the fifth argument goes through `int e = X;` because retail emits `mov r4,#X; mov ip,#Y` and a literal gives the opposite order (no natural form found). First `0xa6120`; siblings `0xa6188`, `0xa62f0`, `0xa638c`, `0xa6454`, `0xa6474`, `0xa6494`, `0xa6610`, `0xa6630`, `0xa6794`, `0xa68e4`, `0xa6904`, `0xa697c`, `0xa6abc`, `0xa6bec`, `0xa6c0c`, `0xa6cc8`, `0xa6df0`.
+- **Guarded tail call (9 sites, 0x2c, 11/11):** `if (g(G) == c) fnY(a);` — `0xb8dcc`, `0xb9dbc`, `0xb9ee4`, `0xba38c`, `0xbb244`, `0xc12a8`, `0xc1a3c`, `0xc1ebc`, `0xc3724`. **Guarded report helper (`0xa5db4` family, +12 sites, 0x2c, 11/11).**
+- Not attempted: the dtor-like family (`0x902c8`, `0x97688`, ...; `pop {r4,lr}` + nop = relaxation-nop residue); `mov r0,#N; pop {r4,pc}` fragments near `0xc933c` (switch pieces).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
