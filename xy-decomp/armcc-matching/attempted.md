@@ -15,6 +15,12 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllField GetMgr (`0x16c0`) family -- shapes NOT yet matched (2026-10-16)
+
+- Scan found 626 callers of `0x16c0` outside `matched/`; 46 matched this batch. Only callers up to 0x38 bytes were shaped; ~470 larger callers are untouched.
+- Seen but not tried (same chain idiom; offsets are examples): `uxth`-arg + helper call (`0x865cc`) + `cmp` + conditional tail `b` — `0x59270`, `0x592a8`, `0x592e0`, `0x5a6b4`, `0x5d698`, `0x92d34` (two nested calls, `beq` around a tail `b`); `ldrd`/`uxth` pair args with `push {r4,r5,r6,lr}` — `0x589fc`, `0x5ab58`, `0x58af4`, `0x5a9e8`, `0x95130`, `0x95f78`, `0x5e808`, `0x923f0`; jump-table dispatchers on `ldrb [..,#460]` (`cmp #9; ldrcc pc,[pc,r0,lsl #2]`) — `0x94d48`, `0x957fc`, `0x930ac` (need `--mask-ranges`); `vldr`/`vcvt` float getters — `0x92330`, `0x92370`; struct-by-sp arg (`strb r0,[sp]; strb r1,[sp,#1]`) — `0x5ef18`; `mov r4,r0` (self kept) + 3-4 call sequences — `0x945e4`, `0x95190`, `0x9752c`, `0x91330`, `0x91364`.
+- `0x6d64c` itself (a ctor/dtor body storing vtable pointers at +0 and +56) is not attempted.
+
 ## DllBattle@0x4bed4 (size 0x20)
 
 - What it is: `return fnA(o->m@0x5c, k, 16) == 5;` (`k` passes through in r1).
