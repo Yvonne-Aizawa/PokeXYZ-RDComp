@@ -1,4 +1,0 @@
-## DllBattle @ 0x71250 (and its getter sibling 0x743a8, 7 slots) -- setter via kind()-switch, 14/29
-- What it is: `mov r3,r0; push {r4,lr}; mov r4,r2; bl 0x620d4(this,..)` then 5-slot table (sub r0,#8; cmp #5) with bodies `strh r4,[r3,#0xf6..0xfe]; pop {r4,pc}` and default tail call `b 0x394` with zeros. The sibling at 0x743a8 is the ldrh getter (cmp #7, 6 bodies, one `mov r0,#6`).
-- Stuck: retail keeps `this` in r3 (caller-saved!) across the `bl 0x620d4`, i.e. armcc believed the callee does not clobber r3 (intra-TU register-usage knowledge?). Our compiles always put `this` in r5 (push {r4,r5,r6,lr}). Tried extern callee, static noinline callee defined before/after: either inlines or ignores. The 0x620d4 callee is a normal function (mov r2,r0 ... uses r2 only).
-- Table mapping from relocations (tools/jumptable_relocs.py): see the matched DllBattle 0x60e00 note.

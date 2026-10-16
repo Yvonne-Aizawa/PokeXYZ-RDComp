@@ -1,4 +1,0 @@
-## DllBattle @ 0x6de1c (size 0x80) -- 30/32 with --mask-ranges 0x18:0x14, stuck on arg-copy order
-- What it is: fn(k, flags, n): 5-slot jump table (relocs: slot0 n==0 ok, slot1 n<2 ok, slot2 n<3 ok, slot3 n==0 ok, slot4 unconditional ok; failed check or k>=5 -> err(0,0,0)); ok tail returns (u8)(((flags&1)?0:1) + (n<<1)).
-- Best source: gotos `if (cond) goto ok; break;` per case, `default: break;` then `err(0,0,0); ok: if(!(flags&1)) return (unsigned char)(1+(n<<1)); return (unsigned char)(n<<1);`. Everything matches except the two prologue moves: retail `mov r5,r1; mov r4,r2` (flags first), armcc emits `mov r4,r2; mov r5,r1` (same registers, swapped order). Tried: local copies of flags/n in either order, static helper for the tail (stays inlined), `?:` vs if forms (those change the tail; the if(!(flags&1)) form is the one that fixes the eq/ne order).
-- Lead: something that makes flags used/copied before n in the first basic block (not found).
