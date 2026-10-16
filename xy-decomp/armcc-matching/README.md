@@ -2332,6 +2332,23 @@ Notes: DllBattle `0x30000`-`0x60000` has ~55 more candidates (0x14-0x60 bytes); 
 **Families from this batch (`armcc-r2-f8`, DllField `0x00000`-`0x40000`):** two-stage chain `B(A(this))` at 0x10 bytes (12 sites: `0x9acc`, `0x2b0d4`, `0x320e8`, `0x37080`, `0x3728c`, `0x38a80`, `0x397b0`, `0x39864`, `0x399e8`, `0x3c474`, `0x3c53c`, `0x3fba0`); `Imp(8); return this[32] = 0;` with a `char` return (`0x2aa40`, `0x2aee0`, `0x343d0` — these were thought to be the zero-register residue but match with the `char` return); release helper `if (this->p) { p->vt[slot](p); this->p = 0; }` (`0x2b380`, `0x31b40`, `0x33ef4`, `0x36bfc`, `0x387d8` slot 1; `0x3f034` slot 6); base constructors `0x1980c` (0x28), `0x243d4` (0x2c) and `0x37054` (0x2c, **trick(redundant-local)**: a shared `char z = 0` makes armcc load the vtable into r2 and the zero into r1); wrappers `0x5740`/`0x5784` (`Imp(this,0,0,0,1,0)`, two stack args), `0x1acd4` (virtual call through slot 16 of the child at +0x2c, then a byte store), `0x130e0` (event handler, `vt[0]` when id == 20, returns 1), `0x12b84` (state step; the pool word is the constant `0x6002f`, not an address), `0x2b8d0` (`if (Chk(h)) Act(h,1,1)`). The scan script misreads the 0x10 chain stubs; use it only as a first pass.
 - **Unmatched / not counted:** DllField `0x37714`, `0x37760` (dtor shape; retail loads the vtable into r0 after `mov r4,r0`, every form hoists the `ldr` above the `push`, best 5/9), `0x32988` (8/11; retail loads the member into r0 before the compare), `0x2948c` (branch-vs-conditional-execution), `0x7490`/`0x964c` (contain a `nop` — relaxed-only at best).
 
+## 2026-10-16 round a — batch 6 (DllBattle thunks / ctor stages, all natural)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0xa9e08` (0x14, all words (masked)) | natural | forwarder: calls local function 0xa9e1c with the 4 incoming args plus a constant 5th stack arg 1. |
+| `DllBattle` | `0xc6d24` (0x14, all words (masked)) | natural | ctor stage: call base ctor, then this->[0x48] = this (self pointer). |
+| `DllBattle` | `0xc6d38` (0x14, all words (masked)) | natural | ctor stage: call a different base ctor, then this->[0x48] = this. |
+| `DllBattle` | `0xc8f80` (0x14, all words (masked)) | natural | return (uint16)g(this->+0xc). |
+| `DllBattle` | `0xc9c48` (0x14, all words (masked)) | natural | deleting-dtor thunk for a secondary base: this-=0xdc, call the base dtor, then tail-call delete on the returned pointer. |
+| `DllBattle` | `0xc9c5c` (0x14, all words (masked)) | natural | deleting-dtor thunk for a secondary base: this-=0xdc, call the base dtor, then tail-call delete on the returned pointer. |
+| `DllBattle` | `0xc9c70` (0x14, all words (masked)) | natural | deleting-dtor thunk for a secondary base: this-=0xdc, call the base dtor, then tail-call delete on the returned pointer. |
+| `DllBattle` | `0xc9c84` (0x14, all words (masked)) | natural | deleting-dtor thunk for a secondary base: this-=0xe8, call the base dtor, then tail-call delete on the returned pointer. |
+| `DllBattle` | `0xc9c98` (0x14, all words (masked)) | natural | deleting-dtor thunk for a secondary base: this-=0xe8, call the base dtor, then tail-call delete on the returned pointer. |
+| `DllBattle` | `0xc9cac` (0x14, all words (masked)) | natural | deleting-dtor thunk for a secondary base: this-=0xe8, call the base dtor, then tail-call delete on the returned pointer. |
+
+Note: the this-adjusting dtor thunks start at `0xc9c48`, `0xc9c5c`, `0xc9c70` (this-0xdc), `0xc9c84`, `0xc9c98`, `0xc9cac` (this-0xe8) — the `sub r0,#N` is the first instruction of each thunk (the earlier lead offsets were +4 each); each is `del(dtor(p - N))`. `0xa9e08` is a sibling of the 28 forwarders but passes a constant stack arg 1 to the local function `0xa9e1c`. `0xc8f80` is `uint16 f(o){ return g(o->x_0xc); }`; `0xc6d24`/`0xc6d38` are ctor stages (base ctor, then `this[0x48] = this`). The tail of the module past `0xc0000` was not scanned further.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
