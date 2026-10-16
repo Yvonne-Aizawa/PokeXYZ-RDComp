@@ -2814,6 +2814,33 @@ Notes — **DllBattle `0x90000`+ families (`armcc-r6-b3`):**
 
 Notes — **DllBattle `0x30000`-`0x60000` (`armcc-r6-b1`):** `0x520e4` returns the u8 at +286+14i when i < the u8 count at +338, else asserts (`fnA(0,0,0)`) and returns 0; `0x4c7d0` returns `o + 0x467a` (assert if i ≥ 320); `0x4c0f8` is a percent-chance roll `fnB(g.v, 100) < a` (`extern struct G g`); `0x52774` / `0x527b8` assert the u16 slot at +278+2i is non-zero then return byte differences / a byte; `0x4d184` is a `.cpp` only because it declares a local after a statement; `0x544a0` asserts i < 24 and `o->p->v[i]` non-zero, returns it. **Pool-pad candidates** (start at 4 mod 8; code words match, only the literal pool differs): `0x3bdd8`, `0x3e7a4`, `0x3981c`, `0x3b534` — now reachable with `--pool-pad`. **New finding:** armcc has no `__rev16` intrinsic (it emits a call), but `((v & 0xff) << 8) | (v >> 8)` on an `unsigned short v` compiles to a real `rev16 r0,r0` (`__rev(x)` is the word rev). Unmatched leftovers in `attempted.md` (`0x3e920`, `0x551d4`, `0x397b8`, `0x4bfd0`, `0x4b394`, `0x4b3f8`, `0x4e808`).
 
+## 2026-10-16 round b — batch 4 (DllField 0x50-0xa0 tier x20)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x1209c` (0x58, 22/22) | natural | message forwarder to child at this+0x80: msgs 16/56 -> vtable slot 0, msg 22 -> slot 1, return 0; else return 1 |
+| `DllField` | `0x151f4` (0x54, 21/21) | natural | message forwarder to child at this+0x84: msg 28 -> vtable slot 0, msgs 34/60 -> slot 1, return 0; else return 1 |
+| `DllField` | `0x3954c` (0x50, 20/20) | **trick(ordering-local)** | dtor stage: install vtable, release member +4 through its vtable slot 1 and zero it, free import-owned member +8 and zero it, return this |
+| `DllField` | `0x39728` (0x50, 20/20) | **trick(ordering-local)** | dtor stage: install vtable, release member +4 through its vtable slot 1 and zero it, free import-owned member +12 and zero it, return this |
+| `DllField` | `0x3a69c` (0x50, 20/20) | **trick(ordering-local)** | dtor stage: install vtable, release member +4 through its vtable slot 1 and zero it, free import-owned member +8 and zero it, return this |
+| `DllField` | `0x3a960` (0x50, 20/20) | **trick(ordering-local)** | dtor stage: install vtable, release member +4 through its vtable slot 1 and zero it, free import-owned member +8 and zero it, return this |
+| `DllField` | `0x3cdb4` (0x50, 20/20) | **trick(ordering-local)** | dtor stage: install vtable, release member +4 through its vtable slot 1 and zero it, free import-owned member +8 and zero it, return this |
+| `DllField` | `0x412e4` (0x5c, 23/23) | natural | release stage: free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each (byte-identical siblings) |
+| `DllField` | `0x41f38` (0x5c, 23/23) | natural | release stage: free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each (byte-identical siblings) |
+| `DllField` | `0x42f90` (0x5c, 23/23) | natural | release stage: free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each (byte-identical siblings) |
+| `DllField` | `0x43460` (0x5c, 23/23) | natural | release stage: free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each (byte-identical siblings) |
+| `DllField` | `0x44504` (0x5c, 23/23) | natural | release stage: free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each (byte-identical siblings) |
+| `DllField` | `0x72574` (0x50, 20/20) | natural | bounds-checked 16-entry global table lookup; index>=16 asserts and clamps to 0, null slot asserts |
+| `DllField` | `0x78cc4` (0x5c, 23/23) | natural | find-by-key: scans 33 slots (stride 0x90) for a live entry (+20 or +28 flag set) whose key (+0) equals the argument; returns the address of that slot's entry pointer, or null |
+| `DllField` | `0x83ad0` (0x5c, 23/23) | natural | release stage: release member +12 through vtable slot 1 and zero it; if member +8 exists, run import fx(m,1) on it then (if still set) release through slot 1 and zero it |
+| `DllField` | `0xdc9f4` (0x50, 20/20) | natural | maps kind byte at this+4 (0..3) to ids 12/13/15/14, else assert stub err(0,0,0) and return 0 |
+| `DllField` | `0xe1598` (0x50, 20/20) | natural | maps kind byte at this+4 (0..3) to ids 16/17/19/18, else assert stub err(0,0,0) and return 0 |
+| `DllField` | `0xe6eb4` (0x58, 22/22) | natural | message forwarder to child at this+0xc: msgs 16/56 -> vtable slot 0, msg 22 -> slot 1, return 0; else return 1 |
+| `DllField` | `0xe701c` (0x50, 20/20) | natural | message forwarder to child at this+4: msg 2 -> vtable slot 0, msg 11 -> slot 2, return 0; else return 1 |
+| `DllField` | `0xe7264` (0x54, 21/21) | natural | message forwarder to child at this+0x10: msg 28 -> vtable slot 0, msgs 34/60 -> slot 1, return 0; else return 1 |
+
+Notes — **DllField 0x50-0xa0 tier (`armcc-r6-f5`):** switch on the kind byte at `this+4` (0-3) returning an id, else the assert stub (`0xdc9f4`: 12/13/15/14; `0xe1598`: 16/17/19/18); `0x72574` is a 16-entry global-table lookup (index ≥ 16 asserts and clamps to 0, a null slot asserts); message forwarders that call a child's vtable slot and return 0, else 1 (`0xe701c` child @ +4, `0x151f4` @ +0x84, `0xe7264` @ +0x10, `0x1209c` @ +0x80 with `case 16: case 56:`, `0xe6eb4` @ +0xc); five byte-identical release stages at `0x412e4`, `0x41f38`, `0x42f90`, `0x43460`, `0x44504` (free import-owned member +0x34, release members +0x30 and +0x2c through vtable slot 1, zeroing each); dtor stages `0x3954c`, `0x3a69c`, `0x3a960`, `0x3cdb4`, `0x39728` (**trick(ordering-local)**: `O *a = s->a; void *vt = VT; s->vt = vt;` fixes the member-load-before-vtable-pool-load shape — a previously known residue); `0x83ad0` release stage; `0x78cc4` scans 33 slots (stride 0x90) for a live entry whose key equals the arg — an `unsigned` counter is needed to get `bcc` instead of `blt`. A `switch` with `case 16: case 56:` reproduces a three-compare `cmp #16 / #22 / #56` chain (an `||` chain gives `cmpne`). Candidates containing a post-link `nop` word (e.g. the `0x11fa0`/`0x11ff0`/`0x12ccc`/`0x12d1c` destructor family) were skipped as relaxed-only.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
