@@ -2294,6 +2294,44 @@ Notes:
 
 Notes: DllBattle `0x30000`-`0x60000` has ~55 more candidates (0x14-0x60 bytes); the six attempts below are logged in `attempted.md`. DllField `0x90000`+ skipped `0xca330`/`0xca494` (save r4-r8, body looks like the `0xc74c4` shape) and `0xe2160` (zero lands in r2 instead of r1). **Two high-value unmatched families:** `DllField@0xde620` (~11 byte-identical sites) and `DllField@0xb1bb8` (24 byte-identical sites) — see `attempted.md`.
 
+## 2026-10-16 round a — batch 5 (DllField 0x0-0x40000 families)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x5740` (0x28, 10/10) | natural | wrapper Imp(this,0,0,0,1,0) with 2 stack args |
+| `DllField` | `0x5784` (0x28, 10/10) | natural | wrapper Imp(this,0,0,0,1,0) with 2 stack args |
+| `DllField` | `0x9acc` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x12b84` (0x34, 13/13) | natural | Imp(0x6002f,0,-1,0); this->o@32 byte89=1; this[37]=1 |
+| `DllField` | `0x130e0` (0x2c, 11/11) | natural | if (this->p@0x7c && id==20) p->vt[0](p); return 1 |
+| `DllField` | `0x1980c` (0x28, 10/10) | natural | constructor: base ctor call, vtable install, field clears, returns this |
+| `DllField` | `0x1acd4` (0x28, 10/10) | natural | calls child(this+0x2c) virtual slot 16 with v, then stores byte v at this+200 |
+| `DllField` | `0x243d4` (0x2c, 10/10) | natural | constructor: base ctor call, vtable install, field clears, returns this |
+| `DllField` | `0x2aa40` (0x1c, 7/7) | natural | Imp(8); this[32]=0; returns that zero (char return of assignment) |
+| `DllField` | `0x2aee0` (0x1c, 7/7) | natural | Imp(8); this[32]=0; returns that zero (char return of assignment) |
+| `DllField` | `0x2b0d4` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x2b380` (0x2c, 11/11) | natural | if (this->p@32) { p->vt[1](p); this->p = 0; } |
+| `DllField` | `0x2b8d0` (0x30, 12/12) | natural | if (Chk(h=this[24])) Act(h,1,1) tail call |
+| `DllField` | `0x31b40` (0x2c, 11/11) | natural | if (this->p@48) { p->vt[1](p); this->p = 0; } |
+| `DllField` | `0x320e8` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x33ef4` (0x2c, 11/11) | natural | if (this->p@48) { p->vt[1](p); this->p = 0; } |
+| `DllField` | `0x343d0` (0x1c, 7/7) | natural | Imp(8); this[32]=0; returns that zero (char return of assignment) |
+| `DllField` | `0x36bfc` (0x2c, 11/11) | natural | if (this->p@48) { p->vt[1](p); this->p = 0; } |
+| `DllField` | `0x37054` (0x2c, 11/11) | **trick(redundant-local)** | constructor: base ctor call, vtable install, field clears, returns this |
+| `DllField` | `0x37080` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x3728c` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x387d8` (0x2c, 11/11) | natural | if (this->p@40) { p->vt[1](p); this->p = 0; } |
+| `DllField` | `0x38a80` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x397b0` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x39864` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x399e8` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x3c474` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x3c53c` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+| `DllField` | `0x3f034` (0x2c, 11/11) | natural | if (this->p@40) { p->vt[6](p); this->p = 0; } |
+| `DllField` | `0x3fba0` (0x10, 4/4) | natural | two-stage call chain B(A(this)) (A result forwarded as tail-call arg) |
+
+**Families from this batch (`armcc-r2-f8`, DllField `0x00000`-`0x40000`):** two-stage chain `B(A(this))` at 0x10 bytes (12 sites: `0x9acc`, `0x2b0d4`, `0x320e8`, `0x37080`, `0x3728c`, `0x38a80`, `0x397b0`, `0x39864`, `0x399e8`, `0x3c474`, `0x3c53c`, `0x3fba0`); `Imp(8); return this[32] = 0;` with a `char` return (`0x2aa40`, `0x2aee0`, `0x343d0` — these were thought to be the zero-register residue but match with the `char` return); release helper `if (this->p) { p->vt[slot](p); this->p = 0; }` (`0x2b380`, `0x31b40`, `0x33ef4`, `0x36bfc`, `0x387d8` slot 1; `0x3f034` slot 6); base constructors `0x1980c` (0x28), `0x243d4` (0x2c) and `0x37054` (0x2c, **trick(redundant-local)**: a shared `char z = 0` makes armcc load the vtable into r2 and the zero into r1); wrappers `0x5740`/`0x5784` (`Imp(this,0,0,0,1,0)`, two stack args), `0x1acd4` (virtual call through slot 16 of the child at +0x2c, then a byte store), `0x130e0` (event handler, `vt[0]` when id == 20, returns 1), `0x12b84` (state step; the pool word is the constant `0x6002f`, not an address), `0x2b8d0` (`if (Chk(h)) Act(h,1,1)`). The scan script misreads the 0x10 chain stubs; use it only as a first pass.
+- **Unmatched / not counted:** DllField `0x37714`, `0x37760` (dtor shape; retail loads the vtable into r0 after `mov r4,r0`, every form hoists the `ldr` above the `push`, best 5/9), `0x32988` (8/11; retail loads the member into r0 before the compare), `0x2948c` (branch-vs-conditional-execution), `0x7490`/`0x964c` (contain a `nop` — relaxed-only at best).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
