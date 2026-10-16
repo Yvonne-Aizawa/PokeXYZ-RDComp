@@ -1,7 +1,7 @@
 /*
  * DllBattle @ 0x71208, size 0x48 -- trace-prefix store of constant 0xa33 into c->v (+0x6c, c = arg2), then
  * if (f1(o->p190, o->q764)) { f2(o->p190 + 0x140); return 1; } return 0.
- * POOL-PAD match (all 17 code words identical, same single pool constant): retail starts at 4 mod 8, so one 0
+ * POOL-PAD match (all 16 code words identical, same single pool constant): retail starts at 4 mod 8, so one 0
  * alignment word precedes the pool constant and the ldr displacement is 4 larger than a standalone compile's.
  * Style: natural
  * Verify:

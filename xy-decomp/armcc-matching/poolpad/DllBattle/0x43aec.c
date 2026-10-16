@@ -2,7 +2,7 @@
  * DllBattle @ 0x43aec, size 0x54 -- trace-prefix store of constant 0x83f into c->v (+0x6c, c = arg3), then on
  * p = o->p190: calls virtual slot 4 (vtable+16) of p->q88 with arg 0, nulls p->q88, clears byte p+0x93, calls f1(),
  * and tail-calls f2(p->r74, 1).
- * POOL-PAD match (all 20 code words identical, same single pool constant): retail starts at 4 mod 8, so one 0
+ * POOL-PAD match (all 19 code words identical, same single pool constant): retail starts at 4 mod 8, so one 0
  * alignment word precedes the pool constant and the ldr displacement is 4 larger than a standalone compile's.
  * Style: natural
  * Verify:
