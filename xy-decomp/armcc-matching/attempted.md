@@ -15,6 +15,31 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllField@0x90c00 (size 0x54) -- volatile-load retry, 2026-10-16
+
+- What it is: handler `(self, args)`: `o = self->+68; GetMgr(); s = (s16)args[2]; id = (u16)args[1]; tab = o->+144; x = mgr->+12->+72; r = (s == -1) ? tab->+16 : Q(G(x), s); if (r) T(r, id & 255); return 0`.
+- Lever applied: `volatile int *b` read (`int a1 = b[1]; int a2 = b[2];` first) gives the retail `ldr r2,[r1,#4]; ldr r1,[r1,#8]; uxth/sxth` and the whole body shape (cmn / ldreq / blne). Best 19/21.
+- Stuck on: callee-saved assignment only -- retail `o -> r5, id -> r6`, ours `o -> r6, id -> r5` (with `tab` volatile / hoisted `x = *(int*)(m+72)` before the `if` the instruction order matches exactly; without them the `ldr r1,[tab]` / `ldr r0,[r0,#72]` order differs). Declaration-order variants of o/s/id/a1/a2 (5 tried) all keep the swap; the variant that gets the right registers (volatile tab read inside the `if`) has the wrong load order.
+- Lead: same r5/r6 swap class as 0x9e550 / 0x9d970.
+
+## DllField@0x92424 (size 0x58) -- volatile-load retry 2026-10-16
+
+- What it is: `i = (u16)args[1]; m = mgr->+12; r = Q(G(m->+72), i); if (r) { o = m->+72->+344->+12; T(o, F2(F1(r))); } return 0`.
+- Lever applied (`volatile int *b`, `unsigned short i = b[1]`): arg handling and first half match (retail `ldr r4,[r0,#12]` = m, `movs r5,r0`).
+- Stuck on 11/22: retail does `movs r5,r0` (result kept in callee-saved r5) and runs the `+72 +344 +12` chain through r0, then `mov r0,r5; bl F1; bl F2; mov r1,r0; mov r0,r4; bl T`. Ours keeps `r` in r0 (plain `cmp r0,#0`), runs the chain through r1 and never copies. Hoisting `o` before the call, `F2(F1(r))` split into locals not yet tried beyond one variant.
+- Lead: r is probably used after the chain in a way that forces the copy (e.g. `r` also passed to `F1` after another call, or chain computed via a call); try a local used after F1.
+
+## DllField@0x9aa14 / 0x9ad24 / 0xa0290 / 0x923f0 / 0x5e098 / 0x5e030 / 0x5aa34 -- ldm/ldrd/writeback variants, volatile-load retry 2026-10-16
+
+All have the arg-load-width pattern PLUS a multi-word load instruction retail uses to fetch the args:
+- 0x9aa14 (0x3c): retail `add r1,r1,#4; push; ldm r1,{r4,r5,r6}; bl; ...; sxtb r3,r6; sxtb r2,r5; sxtb r1,r4` then `H(*(mgr+12->+28)->* + 0x14cd0, ...)`. A plain `struct {int x,y,z;}` copy of `b+1` gives the exact body but each field is read as `ldrb` (armcc folds the narrowing into the load; 0/15 only because of the prologue shift). `volatile struct` copy / `volatile int*` give three separate `ldr`s, never `ldm`. Mixed plain-struct-read + volatile narrowing read not found (the narrowing cannot be separated from the load without a store to a volatile).
+- 0x9ad24 (0x5c, `ldm {r4-r8}` of 5 args): same.
+- 0x923f0 (0x38, `ldrd r0,[r1,#4]; and r5,r0,#255; and r4,r1,#255`): plain `long long v = *(long long*)(b+4); (int)v&255, (int)(v>>32)&255` gets two `ldrb` (folds); `volatile long long` gets `add r0,r1,#4; ldrd r2,[r0]` hoisted before the push (the ldrd imm form is not used for volatile) -- 0/14.
+- 0xa0290 (0x2c): retail `ldr r3,[r4,#4]!` (pre-index writeback) then `ldr r0,[r0,#20]`, then `ldr r1,[r4,#4]`. `volatile int *p = b; x = *++p; y = p[1];` gives 8/11: no writeback, and `ldr r1,[r4,#8]` precedes the `ldr r0,[r0,#20]`; non-volatile first read folds to `ldrh`.
+- 0x5e098 / 0x5e030 (0x38): `ldm r4,{r1,r2}` + `and r1,r1,#255` (callee gets args[1]&255, args[2]); not retried beyond the earlier note (volatile struct -> two ldr).
+- 0x5aa34 (0x24): `ldm r1,{r0,r5}; and r4,r0,#255`, same.
+- Lead: needs a construct that makes armcc form `ldm`/`ldrd` for a pair of adjacent loads while keeping the narrowing at the use (e.g. a struct-by-value parameter / inline-asm barrier); none found.
+
 ## DllBattle event-trigger predicates -- the prologue-move-order residue (round b; ~45 functions across 0xa5000-0xb8000, plus 0xa7cd0 / 0xa7188 / 0xc1244)
 
 - Scan: 226 non-matched `bl 0x6b91c` callers in 0xad000-0xb8000 alone; the c-only / (d,c) shapes matched (see the batch tables). Everything that must save TWO args across the 0x6b91c call (b+c or c+d; `push {r4,r5,r6,lr}`) fails on the SAME two words and nothing else: retail moves the LOWER arg register first (`mov r5,r1; mov r4,r2` / `mov r4,r2; mov r5,r3`), armcc always emits the higher one first. The register assignment itself is already right.
@@ -109,7 +134,7 @@ Not matched:
   ours uses `stmia r1!`. 20/33 best (explicit `&x->a` locals); struct copy and per-field forms worse.
 - 0x7b5c4 (0x40): relaxation nop before a tail `bl` (known nop residue).
 
-## DllField GetMgr (0x16c0) callers 0x90000-0x98000 -- residues (round b)
+## DllField GetMgr (0x16c0) callers 0x90000-0x98000 -- residues — **mostly RESOLVED 2026-10-16 (round b)** by the volatile-read lever (22 of these matched; leftovers: `0x90c00`, `0x92424`, and the `ldm`/`ldrd`/writeback group — see the entries above) (round b)
 
 Matched this round: see pending/matched-DllField-0x9*.md (29 functions).
 
@@ -249,7 +274,7 @@ Everything below stayed stuck; what was tried, so nobody repeats it:
 - `0xb0334` (0x44): same `movs r5,r0` shape (pushes {r4-r6}, so something extra is live): `r=fa(this[0x560]); if(r){o=this[0x5a4]->[0x24]; if(o) tail vt[1](o, r, 0);}`. My C compiles to `push {r4,lr}` + `movs r1,r0` (8/17).
 - `0xb6844` / `0xb76c8` (0x58 incl. pool word) — **RESOLVED 2026-10-16 as POOL-PAD** (`poolpad/`, see README 'Tool addition: --pool-pad') (head fixed by declaring `char *b = v + 0x30;` before `char *a = v + 0x20;`): secondary-base dtor: `this[56]=v+32; this[0]=v; this[80]=v+48; fa(this[92], this+80); this[0]=VT; if(this[32]) fb(this, this+32); return fc(this+8)-8`. The tail (17/22 after the `q`/`t` locals making the `addne r1,r0,#32; blne` form) matches, but the head allocates `v+48` into r0 where retail uses r2 (and keeps r0 = v+32 live), and the pool offset differs by one word. Stores must appear [56],[0],[80]; locals for v+32/v+48 swap the order wrongly.
 
-## DllField script-command handlers whose only miss is the arg-load width (0x93d10, 0x948f0, 0x93b30, 0x94d18, 0x9aeb8) -- 2026-10-16
+## DllField script-command handlers whose only miss is the arg-load width — **mostly RESOLVED 2026-10-16 (round b)** by the volatile-read lever (22 of these matched; leftovers: `0x90c00`, `0x92424`, and the `ldm`/`ldrd`/writeback group — see the entries above) (0x93d10, 0x948f0, 0x93b30, 0x94d18, 0x9aeb8) -- 2026-10-16
 
 Handlers `int Fn(int self, int *args)` reading `args[1]` and narrowing it. Retail does a full `ldr rX,[r1,#4]` then `uxth`/`sxtb`/`strb`;
 armcc always folds the narrowing into the load (`ldrh`/`ldrb`), for every form tried (`unsigned short i = a[1]`, `int v=a[1]; short i=v`,

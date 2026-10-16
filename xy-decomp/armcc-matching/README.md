@@ -3060,6 +3060,35 @@ Notes — **DllBattle 0x50-0xa0 tier (`armcc-r6-b4`):** `0x2924` releases two ow
 
 Notes — **DllBattle event-trigger predicates, `0xa5000`-`0xb8000` (`armcc-r8-ev1` 18 + `armcc-r8-ev2` 11, all natural):** every one wraps the `0x6b91c` query-by-id getter and tail-calls the `0x658d4` / `0x4ce84` post veneer. ev2 (`0xad000`-`0xb8000`): `0xaf710` `if (g(3)==c) post(60, g(4)&255)`; `0xaf958` `g(3)==c && g(83)!=0` posts (59, 2); `0xb020c` `g(3)==c && g(21)==10` posts (57, 8); `0xb0e58` / `0xb7b14` `g(3)==c && g(34)==3 / 5` posts (67, 0); `0xb69b8` `g(4)==c && g(3)==c` posts (32, 10); `0xb420c` `g(3)==c && g(61)==11` posts (62, g(62)+1); `0xb52bc` posts (49, a 40/80/120 value tiered on unsigned `g(80)`); `0xb09d0` / `0xb3ad8` read `g(31)`, call the in-place adjust helper `0x4b990` with (&v, 7 / 16), post(31, v); `0xb2200` `d[0]==2 && g(3)==c && g(22)==12` posts (50, 0x2000) via `0x4ce84`. ev1 (`0xa5000`-`0xad000`): `0xa63ac` posts 45 with `(u8)(query(45)+1)`; `0xa6adc` `check((u8)query(2), c)` posts 83; `0xa6f28` / `0xa7304` / `0xaaa10` post 54 with `helper(a)`; `0xa7af4` / `0xa98f8` (`query(30)==8`, `modify(&v,8)`) post 31; `0xa8250` (`query(57) > 7`); `0xa8820` / `0xaa384` (`lookup((u16)query(18))` is 2 / 1, post 50); `0xaa5c4` / `0xab3c4` / `0xa8b0c` post 54 with `0x1800`; `0xab6f8` `query(51) > 0` posts 66; `0xac568` / `0xac5b0` / `0xac0d4` / `0xac02c` `lookup((u8)query(N))==c` posts 66 / 70 / 54 (`0x400`) / 39 (`(query(39)<<1)&0xffff`). **The ~45-function two-saved-arg group is one residue class** (prologue-move order — see `attempted.md`).
 
+## 2026-10-16 round b — batch 11 (width-narrowing class cracked with the volatile lever x22)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x588b0` (0x30, 12/12) | **trick(volatile-load)** | Script handler: H(mgr->+12->+72->+240->+2740 + 420, (u16)args[1]); returns 0. Two volatile chain loads pin the late uxth. |
+| `DllField` | `0x58ba0` (0x20, 8/8) | **trick(volatile-load)** | Script handler: Imp(a, (s16)args[1], 0, 9, 0). |
+| `DllField` | `0x58bc0` (0x24, 9/9) | **trick(volatile-load)** | Script handler: Imp(a, (s16)args[1], 2, 9, 0). |
+| `DllField` | `0x5cfc8` (0x2c, 11/11) | **trick(volatile-load)** | Script handler: H(mgr->+12->+72->+240, (s16)args[1]); returns 0. Chain load made volatile to pin the late 'mov r1,r4' arg move. |
+| `DllField` | `0x90b24` (0x40, 16/16) | **trick(volatile-load)** | Script handler: r = Q(G(mgr->+12->+72), u16 args[1]); returns r ? F(r) : 9. |
+| `DllField` | `0x91330` (0x34, 13/13) | **trick(volatile-load)** | Script handler: H1(mgr->+12, u16 args[1], 0); H2(mgr); returns 0. |
+| `DllField` | `0x916a8` (0x34, 13/13) | **trick(volatile-load)** | Script handler: H(*(mgr->+12->+28) + 0x14cd0, u16 args[1]); returns 0. |
+| `DllField` | `0x922bc` (0x34, 13/13) | **trick(volatile-load)** | Script handler: returns H(mgr->+12->+72->+404, u16 args[1], 0) != 0. |
+| `DllField` | `0x928ac` (0x44, 17/17) | **trick(volatile-load)** | Script handler: o = self->+68; GetMgr(); i = u8 args[1]; if (i >= 2) Err(0,0,0); returns byte at o->+144 + i*12 + 344. Volatile read placed AFTER the GetMgr() call (retail ldr [r5,#4] after bl). |
+| `DllField` | `0x928f0` (0x30, 12/12) | **trick(volatile-load)** | Script handler: tail-calls H(*(mgr->+12->+28) + 0x14cd0, u16 args[1]). |
+| `DllField` | `0x92d34` (0x38, 14/14) | **trick(volatile-load)** | Script handler: r = Q(G(mgr->+12->+72), u16 args[1]); if (r) tail-call Tail(r). |
+| `DllField` | `0x93b30` (0x30, 12/12) | **trick(volatile-load)** | Script handler: H1(mgr->+44, u16 args[1]); H2(mgr); returns 0. |
+| `DllField` | `0x93cac` (0x40, 16/16) | **trick(volatile-load)** | Script handler: r = Q(G(mgr->+12->+72), u16 args[1]); if (r) T(r,0,0); returns 0. |
+| `DllField` | `0x93d10` (0x2c, 11/11) | **trick(volatile-load)** | Script handler: stores the low byte of args[1] into mgr->+12->+28->*->+0x1539c, returns 0. |
+| `DllField` | `0x9484c` (0x48, 18/18) | **trick(volatile-load)** | Script handler: sibling of 0x928ac, returns u16 at o->+144 + i*12 + 336 (the local unsigned short *p stops armcc folding the offset into ldrh imm: retail add #336; ldrh [r0]). |
+| `DllField` | `0x94894` (0x44, 17/17) | **trick(volatile-load)** | Script handler: sibling of 0x928ac, returns word at o->+144 + i*12 + 340. Volatile read after GetMgr(). |
+| `DllField` | `0x948f0` (0x2c, 11/11) | **trick(volatile-load)** | Script handler: returns field +20 of the 28-byte table entry u16(args[1]) in mgr->+12->+28->+396. |
+| `DllField` | `0x94d18` (0x30, 12/12) | **trick(volatile-load)** | Script handler: H(*(mgr->+12->+28) + 0x14cd0, (s8)args[1]); returns 0. |
+| `DllField` | `0x9515c` (0x34, 13/13) | **trick(volatile-load)** | Script handler: H(mgr->+12->+28->+36, args[1], args[2]&255); returns 0. |
+| `DllField` | `0x95df0` (0x5c, 23/23) | **trick(volatile-load)** | Script handler: if Q(...) succeeds, s = G2(); s ? Z(s,0) : Err(0,0,0); returns 0. |
+| `DllField` | `0x97a74` (0x58, 22/22) | **trick(volatile-load)** | Script handler: if Q(...) succeeds, s = G2(); s ? tail Z(s) : Err(0,0,0); returns 0. |
+| `DllField` | `0x97ee4` (0x30, 12/12) | **trick(volatile-load)** | Script handler: returns H(*(mgr->+12->+28) + 0x15fa8, args[1]&255) >> 16. |
+
+Notes — **Width-narrowing class retried with the volatile lever (`armcc-r8-width`, 22 matches, all `trick(volatile-load)`):** `0x93d10`, `0x948f0`, `0x93b30`, `0x94d18`, `0x9515c`, `0x928f0`, `0x97ee4`, `0x916a8`, `0x922bc`, `0x93cac`, `0x92d34`, `0x91330`, `0x90b24`, `0x97a74`, `0x95df0`, `0x928ac`, `0x94894`, `0x9484c`, `0x58ba0`, `0x58bc0`, `0x588b0`, `0x5cfc8`. What the lever needed beyond `volatile int *b`: read `int t = b[1]` and narrow in the call (e.g. `(signed char)t`); for the `this`/`args` handlers (`0x928ac`, `0x94894`, `0x9484c`) put the volatile read AFTER the `GetMgr()` call and declare the locals first; `0x9484c` also needs a local `unsigned short *p = (unsigned short *)(tab + i*12 + 336)` to keep retail's `add #336; ldrh [r0]` — **that local-pointer trick may also fix the large-offset byte/halfword folding residue (`0x93cec`, `0x92e28`, `0x94cb8`)**; `0x588b0` / `0x5cfc8` set `r1` late, after the pointer chain — making the last chain load(s) `*(char *volatile *)` pins that order (`0x588b0` needs the last two volatile, `0x5cfc8` only the final one); `0x948f0` uses a `struct E{int f[7];}` array (`e[i].f[5]`) for the `ldr [r0,#20]` form. Still stuck: `0x90c00` (19/21; callee-saved `o`/`id` swap r5/r6), `0x92424` (11/22; retail copies the call result with `movs r5,r0`), and the `ldm` / `ldrd` / pre-index-writeback group (`0x9aa14`, `0x9ad24`, `0xa0290`, `0x923f0`, `0x5e098`, `0x5e030`, `0x5aa34`) — volatile gives separate `ldr`s, a plain struct or `long long` read folds the narrowing back into `ldrb`.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
