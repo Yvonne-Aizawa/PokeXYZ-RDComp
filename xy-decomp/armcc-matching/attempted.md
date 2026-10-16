@@ -15,6 +15,12 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllField@0xe1c4c (twin 0xe1fe8; size 0x2c)
+
+- What it is: `unsigned char *p = (unsigned char*)a + 16; Fn11e8(a[0]); Fn79338(a, p[1], 0, 5); return 1;`-shaped — retail has no `mov r0,#1`, ends in `pop {r4,r5,r6,pc}`, so it is a NON-tail call that returns the callee's r0.
+- Tried: that source (10/11); `return Fn79338(...)` gives armcc's tail call (`b`) which is wrong; void / int / char / short / float callee return types — none avoided the tail call.
+- Lead for next time: find a construct that blocks armcc's tail-call optimisation while keeping r0 live.
+
 ## DllBattle@0x76398 (0x3c), 0x71a2c (0x2c), 0x7198c (0x40), 0x73524 (0x40), 0x77338 / 0x77428 family
 
 - 0x76398: bounded array push (`if (s->n >= 6) f394(0,0,0); s->a[s->n] = v; s->n++`, struct {u32 a[6]; u8 n}). Best 13/15 with `i = s->n; s->n = i+1; s->a[i] = v;`; only diff: retail `add r1,r0,#1; strb r1`, ours `add r2,r0,#1; strb r2` (register-allocation class).

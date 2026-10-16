@@ -2544,6 +2544,18 @@ Notes — the 13 listed siblings of the `0x8b2e8` family all match (`pad[]` / me
 
 Notes — **DllBattle comparison-wrapper family (32 sites, all size 0x2c, 11/11):** `void fn(int a,int b,int c){ if (g(N) == c) fnX(A, B); }` where `g` is the `0x6b91c` getter (argument N = 2, 3 or 4) and `fnX` is the `0x4ce84` veneer when `B` is `0x800`/`0x1800`/`0x2000`, else `0x658d4`; only `N`, `A`, `B` change. Getter 2: `0xa5db4`, `0xa7fd4`, `0xa8000`, `0xa802c`, `0xaa524`, `0xab0d4`, `0xab168`, `0xab408`, `0xba824`, `0xbd6b4`, `0xbfde4`, `0xbfed8`. Getter 3: `0xaf540`, `0xb2e8c`, `0xb4cdc`, `0xb5414`, `0xb7850`, `0xb8340`, `0xb8b58`, `0xb9b44`, `0xb9cb0`, `0xb9d64`, `0xb9d90`, `0xb9de8`, `0xba544`, `0xba7f8`, `0xbb87c`, `0xbbccc`, `0xbbdf4`, `0xbe4ec`, `0xbf8cc`. Getter 4: `0xbff04`. Of 480 candidates, only this shape was a mechanical family. Leads not attempted: `mov r4,r0; ldr r0,[r0,#off]; bl 0x19f4; mov r0,r4; pop` (`0x902c8`, `0x97688`, `0x99d44`, `0x9b5e8`, `0x9c2f4`; dtor-like), the same getter shape with `cmp r0,#K` against a constant and `mov r0,#22` as the getter argument in `0xa5de0`..`0xa92b0` (`push {r4-r6,lr}`).
 
+## 2026-10-16 round a — batch 14 (DllField 0xd0000-0xe4000 tier x5, all natural)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0xd50b8` (0x34, 13/13) | natural | float getter: 0.0f if Lookup(this->[12]) null else GetValue(Lookup(this->[12])) |
+| `DllField` | `0xd7964` (0x2c, 11/11) | natural | if this->[184] non-null, ImportB(arg, ImportA(this->[184])) (tail call) |
+| `DllField` | `0xd90cc` (0x30, 12/12) | natural | 7-arg wrapper reordering to Import(a0,a6,a5,a4,a3,a1); a2 unused |
+| `DllField` | `0xe248c` (0x24, 9/9) | natural | o = arg->[4]; return o->vtable[55](o, 0) != 0 |
+| `DllField` | `0xe31f4` (0x30, 12/12) | natural | returns 1 if o=arg->[0] has byte[0x87f] set and Check(o,0x800000) true, else 2 |
+
+Notes — **DllField `0xd000`-`0xe400` tier (`armcc-r4-f3`):** `0xe248c` is 0x24 (a size enumeration said 0x2c): the trailing `mov r0,#12; bx lr` at `0xe24b0` is a separate return-12 stub nobody has claimed. `0xd50b8` size 0x34 includes the 0.0f literal word.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
