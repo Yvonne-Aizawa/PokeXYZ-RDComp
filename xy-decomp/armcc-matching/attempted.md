@@ -15,6 +15,52 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle@0x2da0 (0x38) / 0x2dd8 (0x34) -- zero-register dtors
+
+- What they are: dtor stages — install the vtable, free the member at +0x14 if non-null and zero it; 0x2da0 tail-calls a base dtor, 0x2dd8 returns `this`.
+- Tried: the dtor recipe (`void *vt = VT; void *p = this->m; this->vt = vt; if (p) {free(p); this->m = 0;}`), which matches DllBag@0x13848.
+- Stuck on: 12/14 and 11/13 — retail `mov r1,#0; str r1,[r4,#20]`, armcc `mov r0,#0; str r0,[r4,#20]`; a hoisted `z = 0` local is worse (5/13). Zero-register dtor residue (see the class entry).
+
+## DllBattle@0x12f84 (size 0x48)
+
+- What it is: dtor stage like matched 0x12fcc but with a tail `b` to the base dtor.
+- Tried: the 0x12fcc shape plus a tail call; vt local dropped / vtable store hoisted (3 variants).
+- Stuck on: 2/18 words (candidate 17 words vs retail 18). Retail keeps the member in r1 and the vtable in r2 (`ldr r2,pool; ldr r1,[r0,#8]; mov r4,r0; str r2,[r0]`), vcall as `ldr r0,[r1]; ldr r2,[r0,#4]; mov r0,r1; blx r2`; armcc puts the member in r0.
+- Lead for next time: none yet.
+
+## DllBattle@0x78a24 (size 0x24; sibling 0x7b2e4, `ldrb [r0,#365]`)
+
+- What it is: `r = A(o, *p); return B(o->field8, r)->u16 at +12`.
+- Tried: `int r = fn5dc68(o,*p); return *(u16*)(fn707d4(*(int*)(o+8), r)+12);`, the nested-call form, a typed-struct form.
+- Stuck on: 4/9..8/9 — armcc hoists `ldr r2,[r4,#8]` right after the first `bl` and adds `mov r0,r2` (10 words vs 9); retail does `mov r1,r0` then `ldr r0,[r4,#8]` straight into r0 after the call.
+- Lead for next time: the second call's first arg is probably not a plain field load (an accessor / vt thing, or a different arg order).
+
+## DllField@0x5c3e8 (size 0x1c; sibling 0x5c404 differs only in callee)
+
+- What it is: `push {r4,lr}; ldrd r0,[r1,#4]; and r0,#255; uxth r4,r1; bl F; mul r0,r0,r4; pop` — `F((u8)b[1]) * (u16)b[2]` with the pair loaded by one `ldrd`.
+- Stuck on: 5/7 — plain u32 reads give `ldrb` + `mov r4,r1` + `ldrh` after the call; a u64 load narrows to `ldrb/ldrh` (no `ldrd`).
+- Lead for next time: keep the full u64 live past the call (use it after) so armcc can't narrow.
+
+## DllField@0x4a564 / 0x4ebd8 -- `push {lr}` leaf stubs
+
+- Stuck on: 2/4 — retail `push {lr}` / `pop {pc}` where armcc emits `push {r4,lr}` / `pop {r4,pc}` (the known single-register push residue, also DllBattle 0x4b804 / 0x4bfa8).
+- Lead for next time: none yet.
+
+## DllBattle push-less leaf scan (2026-10-16) -- untried families
+
+- Scan recipe: disassemble `.text`, cut chunks at push/pop/b/bl/bx-lr/.word, keep chunks ending in `bx lr`, 3-24 words, not in `matched/`; strip leading pool junk (recipe also in `matched/DllField/0x412d0.c`).
+- Untried families (offsets are chunk starts; leading pool-junk words may shift the true start):
+- vstr s0 x3 [r0,#64/68/72] + strb r2,[r0,#76]: 0x29abc 0x3357c 0xc5dd8 (float-vec3 zero/init setter, s0 is an incoming float arg)
+- strb from vstmia (vec3 copy to +4 with flag +76): 0x12704 0x12a30 0x12af8 0x12b24; ldm/strd variants 0x126ec 0x12864 0x128d4 0x12a00 0x12ae0 0x12b0c
+- 8-byte copy to +1840 with strb +1836: 0x3c10c 0x3c124 0x3c13c 0x3c154 0x3c16c 0x3c184
+- ldr/ldr/ldr/cmp/strne (conditional store): 0x41f94 0x434ec 0x439d4 (+ mov variants 0x3c960 0x43958)
+- ldrb cmp #N moveq/movne (==N getter): 0x3d21c(!=1 ->#7) 0x762f4(==3,+1684) 0x81638(==6,+16) -- eq/ne boolean getters, probably `return v==N`
+- cmp r1,#0 moveq/movne (bool not): 0x366c 0x4a614(r0); 0x71434/0x9e5a0 conditional-movne leaves
+- ands/movne mask-test getters (known residue class, `bit-test`): 0x78be4 0x795f8 (+32->+72 &7) 0xc79d0
+- indexed ldr `(i&1)*4` +2840/2844: 0xc7304 0xc73f4 ; ldrsb at 2048+116/117: 0xc8fec 0xc900c
+- orr-shift-or setters `r1 = r2 | r1<<N; *p = r1`: 0x4b9cc (<<9), 0x76ce8 (<<25)
+- vldr/vstmia float pair copies: 0x56a10 0x56a48 0x569fc 0x56a38 0x56a58 0x2b9dc
+
 ## DllBattle@0x5fa8c / 0x5faa0 / 0xc9e68 / 0x747fc -- field-copy helpers (leaf, `bx lr`)
 
 - What they are: 0x5fa8c (0x14) `ldr r2,[r1]; str r2,[r0]; ldrh r3,[r1,#4]; strh r3,[r0,#4]`; 0x5faa0 (0x14) the same with `ldrb/strb` at +4 (untested); 0xc9e68 (0x1c) u32 + u16 + u8; 0x747fc (0x14) `ldr r2,[r1]; ldr r3,[r1,#4]; str r2,[r0]; str r3,[r0,#4]`.
