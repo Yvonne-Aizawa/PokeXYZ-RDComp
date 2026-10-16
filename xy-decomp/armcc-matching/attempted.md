@@ -22,7 +22,7 @@ DllField@0x2948c (matched-DllField-0x2948c.md; trick(cpp-inline-member)). The me
 "write the pointee-side logic as an inline member called on the loaded pointer", but only that one flipped.
 Everything below stayed stuck; what was tried, so nobody repeats it:
 
-- DllField 0xb6844 / 0xb76c8 (secondary-base dtor pair): with a volatile-stored first vptr (or a plain store)
+- DllField 0xb6844 / 0xb76c8 (secondary-base dtor pair) — **RESOLVED 2026-10-16 as POOL-PAD** (`poolpad/`, see README 'Tool addition: --pool-pad'): with a volatile-stored first vptr (or a plain store)
   plus `Reset()` member the tail is exact; best 19/22 (plain `o->vt = v`, stores [56],[0],[80]) -- only the head
   `add r2,r1,#48` (retail keeps v+48 in r2 and v+32 in r0; ours puts v+48 in r0) and the pool `ldr` displacement
   differ. NEW FINDING: the pool displacement is NOT a code diff we can fix -- retail's function starts at 4 mod 8
@@ -75,7 +75,7 @@ Everything below stayed stuck; what was tried, so nobody repeats it:
 - `0xbe3e8` / `0xb4e84` (identical bytes bar branch targets): `push {r4,lr}; mov r4,r0; r0=this[0x24]; r2=1; bl fa (r1 = incoming 2nd arg); movs r1,r0; beq ret; mov r0,r4; pop {r4,lr}; b fb; ret: pop {r4,pc}`.
   Best C `void Fn(char*s,int a){int r=fa(*(void**)(s+36),a,1); if(r) fb(s,r);}` gives 6/11: armcc emits `cmp r0,#0` + later `mov r1,r0` instead of the retail `movs r1,r0` before the branch. Tried: int/pointer result, reusing the param (`a = fa(..)`), `if ((r = fa()))`, non-void `return fb(s,r)` / `return r`. None change it. Lead: some construct that makes armcc hoist the `mov r1,r0` above the test (the movs form) -- maybe the result is stored to a second live variable, or the true signature has fb taking more args.
 - `0xb0334` (0x44): same `movs r5,r0` shape (pushes {r4-r6}, so something extra is live): `r=fa(this[0x560]); if(r){o=this[0x5a4]->[0x24]; if(o) tail vt[1](o, r, 0);}`. My C compiles to `push {r4,lr}` + `movs r1,r0` (8/17).
-- `0xb6844` / `0xb76c8` (0x58 incl. pool word): secondary-base dtor: `this[56]=v+32; this[0]=v; this[80]=v+48; fa(this[92], this+80); this[0]=VT; if(this[32]) fb(this, this+32); return fc(this+8)-8`. The tail (17/22 after the `q`/`t` locals making the `addne r1,r0,#32; blne` form) matches, but the head allocates `v+48` into r0 where retail uses r2 (and keeps r0 = v+32 live), and the pool offset differs by one word. Stores must appear [56],[0],[80]; locals for v+32/v+48 swap the order wrongly.
+- `0xb6844` / `0xb76c8` (0x58 incl. pool word) — **RESOLVED 2026-10-16 as POOL-PAD** (`poolpad/`, see README 'Tool addition: --pool-pad') (head fixed by declaring `char *b = v + 0x30;` before `char *a = v + 0x20;`): secondary-base dtor: `this[56]=v+32; this[0]=v; this[80]=v+48; fa(this[92], this+80); this[0]=VT; if(this[32]) fb(this, this+32); return fc(this+8)-8`. The tail (17/22 after the `q`/`t` locals making the `addne r1,r0,#32; blne` form) matches, but the head allocates `v+48` into r0 where retail uses r2 (and keeps r0 = v+32 live), and the pool offset differs by one word. Stores must appear [56],[0],[80]; locals for v+32/v+48 swap the order wrongly.
 
 ## DllField script-command handlers whose only miss is the arg-load width (0x93d10, 0x948f0, 0x93b30, 0x94d18, 0x9aeb8) -- 2026-10-16
 
@@ -92,7 +92,7 @@ Also stuck: 0x98bc0 (0x2c, uxth scheduled before `mov r3,#0`), 0x9d8f4 (0x2c, ze
 ## DllBattle@0x76398 (0x3c), 0x71a2c (0x2c), 0x7198c (0x40), 0x73524 (0x40), 0x77338 / 0x77428 family
 
 - 0x76398: bounded array push (`if (s->n >= 6) f394(0,0,0); s->a[s->n] = v; s->n++`, struct {u32 a[6]; u8 n}). Best 13/15 with `i = s->n; s->n = i+1; s->a[i] = v;`; only diff: retail `add r1,r0,#1; strb r1`, ours `add r2,r0,#1; strb r2` (register-allocation class).
-- 0x71a2c: `k = 0x12c6; if (c->v != k) c->v = k; return f394b8(a, k, c) != 0;` (c = arg3, +0x6c) matches all 8 code words; the only diff is the literal pool — retail has a 0 pad word then the constant (function starts at 4 mod 8, pool 8-aligned), our standalone compile has no pad (10 vs 11 words). Would be a match if the verifier tolerated pool-alignment padding.
+- 0x71a2c — **RESOLVED 2026-10-16 as POOL-PAD** (`poolpad/`, see README 'Tool addition: --pool-pad'): `k = 0x12c6; if (c->v != k) c->v = k; return f394b8(a, k, c) != 0;` (c = arg3, +0x6c) matches all 8 code words; the only diff is the literal pool — retail has a 0 pad word then the constant (function starts at 4 mod 8, pool 8-aligned), our standalone compile has no pad (10 vs 11 words). Would be a match if the verifier tolerated pool-alignment padding.
 - 0x7198c / 0x73524: `&&` predicate chains (`p && f74420(p,13) && !(p->a&7) && !(p->b&7)`); armcc emits conditional execution (`ldrbeq/tsteq/moveq`) and narrows `&7` loads to `ldrb`; retail uses plain `ldr` + `bne/beq` branches (branch-vs-conditional-execution class; best 8/16, 4/16).
 - 0x77338 / 0x77360 / 0x77398 / 0x773ec / 0x77428 family (`f5dc68(this,*k)` then `f707d4(this->+8, r)` ...): retail does `mov r1,r0` then `ldr r0,[r4,#8]`; armcc emits `ldr r2,[r4,#8]` before the mov (scheduling class; the same cluster as 0x78a24). Best 4/10; 0x77428 also starts with `mov r2,r1`.
 
