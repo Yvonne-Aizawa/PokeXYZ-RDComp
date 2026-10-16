@@ -2883,6 +2883,44 @@ Notes — **DllField 0x50-0xa0 tier (`armcc-r6-f5`):** switch on the kind byte a
 
 Notes — **DllField GetMgr callers, `0x50000`-`0x70000` (`armcc-r6-f1`, 34 matches):** `uxth` id-check family (`0x59270`, `0x592a8`, `0x592e0`, `0x5d698` 14/14 each; `0x5a6b4` 19/19 — returns `Tail(r)` or calls `Other(0,0,0)` and returns 0); the same shape with `uxth` / `and #255` narrowing, which needs a **volatile** read of `b` (`trick(volatile)`): `0x593cc`, `0x59b04`, `0x5c5d4`, `0x5b758`, `0x5c490`, `0x58cfc`, `0x590fc`, `0x5912c`, `0x59cb4`, `0x5a380`, `0x5e068`, `0x5e278`, `0x5e534` (vtable slot 7), `0x5eda8`; id-check variants `0x59d7c` / `0x5edcc` (return -1 and 1 when not found), `0x59848` (returns 9); hi/lo halfword split of `b[1]` (natural: `0x5d45c`, `0x5d910`, `0x5d0f0`); natural chain getters / handlers (`0x5c9fc`, `0x5d4dc`, `0x5ed88`, `0x5bd84`, `0x5e2b0`, `0x5c580`, `0x58d50`, `0x5db64`, `0x5c1ac`). **Mechanism:** a plain access gives `ldrh`/`ldrb`; reading through a `volatile int *` gives retail's `ldr` followed by `uxth` / `and`. Plain two-word `b[1], b[2]` already gives the retail `ldm` pair load (`0x5c580`). Unmatched: the `ldrd r0,[r1,#4]` pair family (never emitted by long-long / `__packed` / struct-pair loads), `0x5e098`/`0x5e030`, `0x588b0`/`0x5cfc8` (narrowing hoisted earlier than retail), `0x5aa34`, `0x5bb78` (`r != -1` compiles to `adds`, retail uses `cmn` / `moveq` / `movne`). Not tried: jump-table dispatchers, `vldr` getters, 18-28-word bodies (`0x5bdf4`..), `0x5c938` / `0x5d204`.
 
+## 2026-10-16 round b — batch 6 (DllField GetMgr callers 0x90000-0x98000 x31)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x90adc` (0x24, 9/9) | natural | Reads args[1] and calls S(mgr->+44, 3, args[1]); returns 0. |
+| `DllField` | `0x90b00` (0x24, 9/9) | natural | Reads args[1] and calls S(mgr->+44, 3, args[1]) (different callee than 0x90adc); returns 0. |
+| `DllField` | `0x90bc4` (0x1c, 7/7) | natural | Getter: returns the byte at mgr->+12->+72->+344->+36. |
+| `DllField` | `0x90be0` (0x20, 8/8) | natural | Calls G(mgr->+12->+72) then T(); returns 0. |
+| `DllField` | `0x91094` (0x58, 22/22) | natural | Two-GetMgr sequence: m=mgr2->+12; v=A(m->+72->+344); w=B(m,v,0,1); C(mgr1,w); D(mgr1); E(mgr1); returns 0. |
+| `DllField` | `0x91590` (0x20, 8/8) | natural | Boolean getter: loads self->+68, fetches the manager (unused), returns (self68->+144)->+16 != 0. |
+| `DllField` | `0x922f0` (0x28, 10/10) | natural | Calls S3(mgr->+12->+28, args[1], args[2]) (ldm of the arg pair); returns 0. |
+| `DllField` | `0x92330` (0x40, 16/16) | natural | Float-field getter: if mgr->+28->+148 (float*) is non-null returns (int)f[0], else calls the assert/error stub (0x200 veneer) and returns 0. |
+| `DllField` | `0x92370` (0x40, 16/16) | natural | Float-field getter: as 0x92330 but returns (int)f[1] (offset +4). |
+| `DllField` | `0x923d4` (0x1c, 7/7) | natural | Getter: loads self->+68, fetches the manager (result unused), returns the signed byte at (self68->+144)+0x100+76. |
+| `DllField` | `0x92804` (0x28, 10/10) | natural | Calls S2(mgr->+12->+72->+364, args[1]); returns 0. |
+| `DllField` | `0x92e54` (0x34, 13/13) | natural | Gets obj=mgr->+12->+72->+240->+2740; if Q(obj+844) is false, clears obj byte +232 and returns 1 (predicated strb/mov), else returns 0. |
+| `DllField` | `0x930ac` (0xd8, 54/54) | natural | Script handler: fetches the mode byte block at mgr->+12->+28->+460, asks F(self,args[1],&out) for an output record, then writes out[0] from the mode (0/2/6 -> 0; 4/5/8 -> err + 1; 1/3 -> the mode itself; else err + mode) and copies the u32 at +4 and bytes +8/+9 into out[1..3]; returns 0. |
+| `DllField` | `0x9342c` (0x3c, 15/15) | natural | Bit-set test: i = args[1]; b = mgr->+12->+28->[0]+0x12e4 (bitset header); returns (R(b, b[1])[i>>3] >> (i&7)) & 1. |
+| `DllField` | `0x939cc` (0x1c, 7/7) | natural | Tail-chains: returns F2(G(mgr->+12->+72)) (second call is a tail call). |
+| `DllField` | `0x945e4` (0x38, 14/14) | natural | self-in-r4 sequence: v=F1(mgr->+12); A(mgr,v); B(mgr); C(mgr); returns 0. |
+| `DllField` | `0x94824` (0x28, 10/10) | natural | Boolean: returns S2(mgr->+12->+72->+404, 0) != 0. |
+| `DllField` | `0x94c34` (0x24, 9/9) | natural | Returns F2(F1(mgr->+12->+72->+344->+12)); the second call is a tail call. |
+| `DllField` | `0x94ce4` (0x34, 13/13) | **trick(redundant-local)** | Fn(self): fetches the manager; if self->+72 is non-null calls V(self72->+404); then W2(mgr->+28, 1); returns 1. |
+| `DllField` | `0x95130` (0x2c, 11/11) | natural | Reads args[1], args[2] (one ldrd), fetches the manager and calls Helper(mgr->+12->+72->+316, a1, a2); returns 0. Sibling of 0x95f78. |
+| `DllField` | `0x95190` (0x38, 14/14) | natural | self-in-r4 sequence: v=F1(mgr->+12); A(mgr,v); B(mgr); C(mgr); returns 0 (different F1 than 0x945e4). |
+| `DllField` | `0x95644` (0x24, 9/9) | natural | Calls S2(mgr->+12->+72->+356, 1); returns 0. |
+| `DllField` | `0x957fc` (0x84, 33/33) | natural | Maps the mode byte at mgr->+12->+28->+460 to a result: 1->1, 3->2, 4->3, 5->4, 8->err(0,0,0) then 1, anything else -> 0. |
+| `DllField` | `0x95d64` (0x24, 9/9) | natural | Calls S2(mgr->+12->+72->+356, 0); returns 0 (sibling of 0x95644). |
+| `DllField` | `0x95f78` (0x2c, 11/11) | natural | Reads args[1], args[2] (one ldrd), fetches the manager and calls Helper(mgr->+12->+72->+316, a1, a2) (different callee than 0x95130); returns 0. |
+| `DllField` | `0x96fbc` (0x2c, 11/11) | natural | Returns R4(mgr->+12->+28->[0] + 0x15fa8, 3) >> 16 (high half of a packed result). |
+| `DllField` | `0x971a8` (0x3c, 15/15) | natural | Returns (int)F(mgr->+12->+72->+344->+12) / 18 (float getter converted and divided by 18 via smull magic). |
+| `DllField` | `0x9752c` (0x38, 14/14) | natural | self-in-r4 sequence: v=F1(mgr->+12); A(mgr,v); B(mgr); C(mgr); returns 0 (third sibling). |
+| `DllField` | `0x979dc` (0x48, 18/18) | natural | Calls G(mgr->+12->+72->+244), then B(mgr); if G returned 0 calls the assert/error stub (0x528 veneer); returns 0. |
+| `DllField` | `0x97a24` (0x28, 10/10) | natural | Returns byte [6] of the struct returned by R6(mgr->+12->+28->+40, 3, 0). |
+| `DllField` | `0x97d9c` (0x60, 24/24) | natural | Calls the assert stub (0,0,0), then if self->+72 is non-null calls Y(Z(self72)) else the assert stub again; then X(mgr->+28, 2); returns 1. |
+
+Notes — **DllField GetMgr callers, `0x90000`-`0x98000` (`armcc-r6-f2`, 31 matches):** plain call chains (`0x90bc4`, `0x923d4`, `0x939cc`, `0x90be0`, `0x91590`, `0x90adc`, `0x90b00`, `0x95644`, `0x95d64`, `0x92804`, `0x94824`, `0x94c34`, `0x97a24`, `0x922f0`); `ldrd` arg pair (`0x95130`, `0x95f78` — siblings of `0x92688`); larger getters/chains (`0x96fbc` result >> 16, `0x971a8` float getter / 18, `0x92330` / `0x92370` float getters that `Assert` on a null pointer, `0x9342c` bit-test getter, `0x92e54` predicated store, `0x979dc` call then `Assert` if 0); `self`-in-r4 multi-call sequences (`0x945e4`, `0x95190`, `0x9752c` 14/14, `0x91094` two `GetMgr` calls 22/22, `0x97d9c` 24/24); `0x94ce4` (13/13, **trick(redundant-local)**: an extra local `q = o ? o->+404 : o` keeps self in r4 and the manager in r5). **Jump-table dispatchers matched with `--mask-ranges`** (case→body mapping from `jumptable_relocs.py`, so relocation-derived, not compiler-proven): `0x957fc` (33/33, `--mask-ranges 0x20:0x24`) and `0x930ac` (54/54, `--mask-ranges 0x38:0x24`). 22 more handlers are one word off from the width-narrowing residue (retail `ldr` + `uxth` / `and #255` / `sxtb` at use) — try the volatile read from the `0x59270` family there; large-offset byte access (`add #0x15000; add #0x39c; ldrb`) folds the 0x39c into the `ldrb` immediate; a 13-function relaxed-only nop family (`bl 0x200` + `nop {0}`).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
