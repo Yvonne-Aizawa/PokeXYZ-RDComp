@@ -1695,7 +1695,7 @@ Kinds (find them all with
 |---|---|---|
 | `volatile-strd` | `volatile` on a 64-bit global only to get `strd` | 10 (globals-init family, incl. DllSalon@0xdd0) |
 | `volatile-load` | `volatile` field only to keep armcc from narrowing/dropping a load | DllUSGymIce@0x278, DllSequence@0x10a80 |
-| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54 |
+| `redundant-local` | named literal/temp local only to steer armcc's constant-register choice | DllKisekae@0xb6f0, DllBattle@0x39c0, DllGts@0x8850, DllUSGymEsper@0x480, DllPoke3Select@0x63c, DllWazaOmoidashi@0x924, DllField@0x10c34, 0x10c54, DllBattle@0x2b9dc |
 | `split-expression` | one expression split across statements only to stop armcc fusing a load (`ldrsh`) | DllTitle@0xd534 |
 | `extra-arg` | unused pass-through int arg(s) to shift register allocation (1 arg -> vtable in r2, 2 -> r3) | DllTownmap@0xb10, 0x3554, 0x35f4, 0xd68, DllBattle@0x7a780 |
 | `static-helper` | one-use static helper to pin an argument register / reproduce r0 reuse | DllEshop@0x1b10, DllHologramMail@0xe970 |
@@ -2444,6 +2444,35 @@ Notes: **DllField call-veneer families (`armcc-r3-f1`):** `(this, this->byte@10,
 
 Notes — **DllField GetMgr (`0x16c0`) caller scan (`armcc-r3-f2`):** 626 `bl 0x16c0` callers were outside `matched/` at scan time; only callers up to 0x38 bytes were shaped, so ~470 larger callers are untouched. Shapes matched: tail-call with constant add (`Tail(**(chain) + C)`, 16 fns, 0x24), void-call with constant add + `return 0` (7 fns), call with a flag arg `mov r1,#0/#1` (5 fns, 0x1c), null-check `blne` (4 fns, 0x24), `ldrsb` signed byte getters (3 fns), event arg `a[1]` loaded before `GetMgr` (8 fns, 0x28/0x30), bare `GetMgr()` + `return 0` (`0x591a0`), and `0xbbb54` (`Free(Dtor(t))`, `Dtor` = `0x6d64c`, the only `bl 0x6d64c` caller; `Free` = `0x1c8`). Some saved files carry an unused `extern` (e.g. `Sink`) — harmless.
 Not matched (see `attempted.md`): nested `0x865cc` call + conditional tail (`0x59270` and five siblings), `ldrd`/`uxth` arg pairs, jump-table dispatchers on `ldrb [..,#460]` (`0x94d48`, `0x957fc`, `0x930ac`; need `--mask-ranges`), float getters `0x92330`/`0x92370`, struct-by-stack arg `0x5ef18`, `self`-in-r4 multi-call functions (`0x945e4`, `0x95190`, `0x9752c`, `0x91330`, `0x91364`).
+
+## 2026-10-16 round a — batch 10 (DllBattle push-less families x21)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x12704` (0x14, 5/5) | natural | vec3 setter: this->+4 = (x,y,z) float triple by value; this->+0x4c (u8) = 1 (dirty flag). |
+| `DllBattle` | `0x12a30` (0x14, 5/5) | natural | vec3 setter: this->+52 = (x,y,z) float triple by value; this->+0x4c (u8) = 1 (dirty flag). |
+| `DllBattle` | `0x12af8` (0x14, 5/5) | natural | vec3 setter: this->+16 = (x,y,z) float triple by value; this->+0x4c (u8) = 1 (dirty flag). |
+| `DllBattle` | `0x12b24` (0x14, 5/5) | natural | vec3 setter: this->+28 = (x,y,z) float triple by value; this->+0x4c (u8) = 1 (dirty flag). |
+| `DllBattle` | `0x29abc` (0x14, 5/5) | natural | splat setter: this->+0x40/+0x44/+0x48 = v (float); this->+0x4c (u8) = flag (3rd arg). |
+| `DllBattle` | `0x2b9dc` (0x18, 6/6) | **trick(redundant-local)** | writes constant pair (-94.0f, -54.0f) to arg2->{x,y}; arg1 unused (default position/offset reset). |
+| `DllBattle` | `0x3357c` (0x14, 5/5) | natural | splat setter: this->+0x40/+0x44/+0x48 = v (float); this->+0x4c (u8) = flag (3rd arg). |
+| `DllBattle` | `0x3c10c` (0x18, 6/6) | natural | copy 8 bytes from arg3->+164 (two ints) into this->+0x730; this->+0x72c (u8) = arg4. |
+| `DllBattle` | `0x3c124` (0x18, 6/6) | natural | copy 8 bytes from arg3->+172 (two ints) into this->+0x730; this->+0x72c (u8) = arg4. |
+| `DllBattle` | `0x3c13c` (0x18, 6/6) | natural | copy 8 bytes from arg3->+180 (two ints) into this->+0x730; this->+0x72c (u8) = arg4. |
+| `DllBattle` | `0x3c154` (0x18, 6/6) | natural | copy 8 bytes from arg3->+188 (two ints) into this->+0x730; this->+0x72c (u8) = arg4. |
+| `DllBattle` | `0x3c16c` (0x18, 6/6) | natural | copy 8 bytes from arg3->+196 (two ints) into this->+0x730; this->+0x72c (u8) = arg4. |
+| `DllBattle` | `0x3c184` (0x18, 6/6) | natural | copy 8 bytes from arg3->+204 (two ints) into this->+0x730; this->+0x72c (u8) = arg4. |
+| `DllBattle` | `0x3d21c` (0x14, 5/5) | natural | boolean getter: returns this->+7 (u8) != 1. |
+| `DllBattle` | `0x762f4` (0x14, 5/5) | natural | boolean getter: returns this->+0x694 (u8) == 3. |
+| `DllBattle` | `0x81638` (0x14, 5/5) | natural | boolean getter: returns this->+0x10 (u8) == 6. |
+| `DllBattle` | `0xc5dd8` (0x14, 5/5) | natural | splat setter: this->+0x40/+0x44/+0x48 = v (float); this->+0x4c (u8) = flag (3rd arg). |
+| `DllBattle` | `0xc7304` (0x10, 4/4) | natural | indexed getter: returns this->+0xb18[arg & 1] (int array). |
+| `DllBattle` | `0xc73f4` (0x10, 4/4) | natural | indexed getter: returns this->+0xb1c[arg & 1] (int array). |
+| `DllBattle` | `0xc8fec` (0xc, 3/3) | natural | signed byte getter: returns (signed char) this->+0x874. |
+| `DllBattle` | `0xc900c` (0xc, 3/3) | natural | signed byte getter: returns (signed char) this->+0x875. |
+
+Notes — **DllBattle push-less leaf families (`armcc-r3-b4`):** float splat setters `x=y=z=v`, `+0x4c (u8) = flag` (`0x29abc`, `0x3357c`, `0xc5dd8`); vec3-by-value setters with `+0x4c = 1` (`0x12704` +4, `0x12af8` +16, `0x12b24` +28, `0x12a30` +52); 8-byte struct copy from `arg3->+N` into `this->+0x730`, `+0x72c (u8) = arg4` (`0x3c10c`..`0x3c184`, N = 164..204 step 8); `==N` boolean getters (`0x762f4` `+0x694 == 3`, `0x81638` `+0x10 == 6`, `0x3d21c` `+7 != 1` — matches only as `if (v == 1) return 0; return 1;`, a spelling choice); `o->v[i & 1]` indexed getters (`0xc7304`, `0xc73f4`); `ldrsb` getters (`0xc8fec`, `0xc900c`); `0x2b9dc` writes (-94.0f, -54.0f) to `arg2->{x,y}` (**trick(redundant-local)**: named locals `a`, `b` get armcc to emit one `vstmia` instead of two `vstr`).
+Not matched: conditional-store chain (`0x41f94`, `0x434ec`, `0x439d4`, `0x3c960`, `0x43958`; best 5/8), ldm/strd vec3 copies (`0x126ec`, `0x12864`, `0x128d4`, `0x12a00`, `0x12ae0`, `0x12b0c`; 2/6, field-copy residue). `0x4b9cc`, `0x76ce8`, `0x56a10`, `0x56a38`, `0x569fc`, `0x56a48`, `0x56a58` are tail blocks / case arms of larger functions, not standalone — the enclosing functions are the real candidates.
 
 ## What this does *not* do yet
 

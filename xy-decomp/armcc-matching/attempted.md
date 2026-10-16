@@ -15,6 +15,18 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle conditional-store chain (0x41f94, 0x434ec, 0x439d4, 0x3c960, 0x43958)
+
+- What it is: `if (g.v != K) g.v = K;` with `g` a pool-address global, `v` at +0x6c.
+- Tried: plain, local `k`, local pointer, `old` temp, `0x5d3 != g.v`, an extra unused int arg, `return 0` / `return 1` variants.
+- Stuck on: best 5/8 — retail loads the ADDRESS into r1 first and the constant into r0 (pool order addr, K); armcc always puts the constant in r0 and the address in r1, or swaps the pool order (3-4/8).
+- Lead for next time: the real function probably has a different arg / return shape or an inlined context.
+
+## DllBattle vec3 copies via ldm/strd (0x126ec, 0x12864, 0x128d4, 0x12a00, 0x12ae0, 0x12b0c)
+
+- What it is: `ldm r1,{r2,r3,ip}; str ip; strd r2,r3`.
+- Stuck on: 2/6 — armcc emits `ldm r1,{r1-r3}; add ip; stm` for a struct copy and per-field ldr/str for field copies (the known field-copy residue).
+
 ## DllField GetMgr (`0x16c0`) family -- shapes NOT yet matched (2026-10-16)
 
 - Scan found 626 callers of `0x16c0` outside `matched/`; 46 matched this batch. Only callers up to 0x38 bytes were shaped; ~470 larger callers are untouched.
