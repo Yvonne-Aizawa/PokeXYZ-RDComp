@@ -1629,6 +1629,42 @@ binary — the project's own marker for post-link branch-relaxation nops
 entirely, not just argument-setup loads. Left as an open item; no
 case-to-block mapping was ever asserted for it since it never matched.
 
+### Tool addition: `--pool-pad`, a distinct pool-alignment tier (2026-10-16)
+
+Some retail functions start at 4 mod 8 and the compiler 8-aligns the literal pool, so
+retail carries one all-zero pad word between the last code word and the pool constant(s), and each
+`ldr rN,[pc,#disp]` reads 4 further. A standalone compile starts at offset 0 and can never emit
+that pad, so a code-identical candidate shows as e.g. 8/11 (DllBattle `0x71a2c`, DllField
+`0xb6844`/`0xb76c8`). `fingerprint_fn.py --pool-pad` retries a *failed* default compare as follows:
+
+- the target may have 1-2 extra **all-zero** words, only at the very start, the very end, or the
+  code/pool boundary (just after the candidate's last `bx lr`/`pop {..pc}`/`b`/`ldr pc` word);
+- with those removed, every word must be identical (b/bl immediates masked as always), except the
+  displacement field of pc-relative `ldr`/`vldr` literal loads;
+- each literal load must read the **same pool word** (same compacted index) on both sides, so the
+  same constants in the same order are still required (a displacement pointing at the pad, or at a
+  different constant, is rejected).
+
+A success prints `*** POOL-PAD MATCH ***` (never `MASKED MATCH`) and exits **3** (0 stays
+reserved for a masked match, so `&& save` scripts never count one by accident). Without the flag,
+or when the plain compare already passes (it then reports `MASKED MATCH`, exit 0), nothing changes;
+it cannot be combined with `--relax-nops`/`--mask-ranges`. Self-test:
+`python3 xy-decomp/armcc-matching/tools/test_pool_pad.py` (synthetic unit cases + real armcc runs
+that a known masked match is still MASKED MATCH and `0x71a2c` is POOL-PAD).
+
+**Policy (provisional, user to confirm): POOL-PAD matches are a separate tier.** They
+live under `poolpad/<Module>/<off>.c[pp]` (same layout as `relaxed/`), their header carries
+`Verify: ... --pool-pad`, and they are **not** counted in the headline matched total until the
+user decides. Rationale: a separate dir cannot be miscounted by anything that scans `matched/`
+(heatmap, totals re-derivation) and keeps the claim honest -- the evidence is "code words
+identical + same pool words, layout differs by alignment pad", strictly stronger than `relaxed/`
+(no elided nops) but not the full masked criterion.
+Recommendation: promote the whole tier into `matched/` once accepted (the pad is a pure
+link-layout fact, the same class as masked branch immediates); the headers already carry the
+required `--pool-pad` Verify line, so it is a plain directory move.
+First members: DllBattle `0x71a2c`, DllField `0xb6844`, `0xb76c8` (the last two need the locals
+declared `b` (v+0x30) before `a` (v+0x20), `Style: trick(declaration-order)`).
+
 ## Working on this (rules for agents picking up a function)
 
 - **30-minute cap per agent.** If you haven't reached a masked match
