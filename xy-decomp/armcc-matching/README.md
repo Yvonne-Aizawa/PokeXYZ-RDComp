@@ -2943,6 +2943,56 @@ Notes — **DllField GetMgr callers, `0x90000`-`0x98000` (`armcc-r6-f2`, 31 matc
 
 Notes — **DllBattle script-command handlers, `0x60000`-`0x90000` (`armcc-r6-b2`, 15 matches; a new family):** `fn(ctx, obj[, args])` reading script arguments through the shared read veneers (`0x504` int, `0x1ab4` vec3/word, `0x1acc` float) with `rd(a, &v, 1)`; 12 of the 15 share one shape. Natural (9): `0x89aac` (reads one arg into a discarded local, calls a worker), `0x86734`, `0x8638c` (reads and discards two int args), `0x86bcc` (16-byte vector arg), `0x8070c` (float, substitutes 50.0f if negative), `0x87ac8` (`(u16)v * pi/180` into a float field), `0x82cb4` (vec3 + int mode; mode 1 and the flag at +605 negates z, then a setter), `0x7af3c` (index remapped through a table, then a virtual call on slot 32 with `(flag != 0)`), `0x89acc`. `trick(redundant-local)` (6): `0x7efb4` (defaults 16.0f / 6000.0f for zero float args; a block-scoped `float z = 0.0f;` makes armcc load the zero pool constant first), `0x80820`, `0x80858`, `0x82a7c` (pointer-table lookup by script index; `O *q = o;` and `int x = v;` copies fix the r4/r5 assignment and the `[sp]`-before-member load order), `0x7bae0`, `0x853a0` (per-row object loops calling vtable slots 32 / 42; same `q = o` copy). Unmatched leftovers and recipes in `attempted.md` (`0x7a444`/`0x84af0`, `0x7ade8`, `0x8711c`, `0x88130`, `0x83888`/`0x85080`, `0x7b5c4` relaxation nop).
 
+## 2026-10-16 round b — batch 8 (DllField GetMgr callers 0x98000-0xa6000 x43)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllField` | `0x980fc` (0x30, 12/12) | **trick(volatile-load)** | Script-command handler: reads args[1] (low byte), calls a helper on mgr->+12->+28->*->+0x15fa8 with it, returns the result as u16. |
+| `DllField` | `0x9812c` (0x2c, 11/11) | natural | Calls helper on mgr->+12->+28->*->+0x15fa8 with constant 3, returns the result as u16. |
+| `DllField` | `0x98420` (0x2c, 11/11) | natural | Calls helper on mgr->+12->+28->*->+0x15fa8 with constant 4, returns the high halfword (result >> 16). |
+| `DllField` | `0x98588` (0x2c, 11/11) | natural | Calls helper on mgr->+12->+28->*->+0x15fa8 with constant 4, returns the result as u16. |
+| `DllField` | `0x98b84` (0x38, 14/14) | **trick(volatile-load)** | Script-command handler: sets byte args[1] on object mgr->+12->+64 via helper, then returns whether a second helper on it is nonzero. |
+| `DllField` | `0x98c24` (0x28, 10/10) | **trick(volatile-load)** | Script-command handler: stores u16 args[1] into *(mgr->+12->+28->+56) and returns 0. |
+| `DllField` | `0x98cec` (0x28, 10/10) | **trick(volatile-load)** | Script-command handler: stores u16 args[1] into word +4 of mgr->+12->+28->+56 and returns 0. |
+| `DllField` | `0x98f30` (0x28, 10/10) | natural | Calls helper on mgr->+12->+28->+52 then clears byte +1604 of it; returns 0. |
+| `DllField` | `0x99604` (0x34, 13/13) | **trick(volatile-load)** | Script-command handler: calls helper on mgr->+12->+28->*->+0x129a8 with sign-extended s16 args[1]; returns 0. |
+| `DllField` | `0x99638` (0x34, 13/13) | **trick(volatile-load)** | Script-command handler: calls sibling helper on mgr->+12->+28->*->+0x129a8 with sign-extended s16 args[1]; returns 0. |
+| `DllField` | `0x9ad9c` (0x28, 10/10) | **trick(volatile-load)** | Script-command handler: stores u16 args[1] into word +8 of mgr->+12->+28->+56 and returns 0. |
+| `DllField` | `0x9aeb8` (0x30, 12/12) | **trick(volatile-load)** | Calls helper on mgr->+12->+28->*->+0x1aeec then returns the low 4 bits of the halfword at +4 of it. |
+| `DllField` | `0x9b950` (0x3c, 15/15) | natural | Script-command handler: calls helper on the sub-object mgr->+12->+72->+408 with args[1] and (args[2] != 0); returns 0. |
+| `DllField` | `0x9bae8` (0x24, 9/9) | natural | Script-command handler: tail-calls helper on mgr->+12->+72->+408 with args[1] and returns its result. |
+| `DllField` | `0x9bb28` (0x24, 9/9) | natural | Calls helper on mgr->+12->+72->+408 with constant 1; returns 0. |
+| `DllField` | `0x9be50` (0x34, 13/13) | natural | Script-command handler: calls helper on mgr->+12->+72->+408 with (args[1] != 0); returns 0. |
+| `DllField` | `0x9d214` (0x44, 17/17) | natural | Script-command handler: if mgr->+12->+72->+408 is non-null calls H(o, args[1]), else E(0,0,0); returns 0. |
+| `DllField` | `0x9d374` (0x30, 12/12) | **trick(volatile-load)** | Script-command handler: H1(mgr->+12->+28->+20, u16 args[1]) then tail-calls H2(result, 2). |
+| `DllField` | `0x9d534` (0x30, 12/12) | **trick(volatile-load)** | Script-command handler: H1(mgr->+12->+28->+20, u16 args[1]) then tail-calls H2(result, 8). |
+| `DllField` | `0x9d564` (0x44, 17/17) | natural | Script-command handler: if mgr->+12->+72->+408 is non-null tail-calls H(o, args[1]); else E(0,0,0) and returns 1. |
+| `DllField` | `0x9d688` (0x2c, 11/11) | natural | Calls F(8), then tail-calls H(mgr->+12->+28, F's result). |
+| `DllField` | `0x9d9ec` (0x34, 13/13) | natural | Calls F on mgr->+12->+24 and passes the result to a 5-arg helper (33, 0, 0, 0); returns 0. |
+| `DllField` | `0x9e018` (0x5c, 23/23) | natural | Gets mgr->+12 and the animation sub-object t at mgr->+12->+72->+240->+2740; reads two floats (A, B) from mgr->+12->+28->+40 and calls C(t+420, t, A, B); returns 0. |
+| `DllField` | `0x9e400` (0x24, 9/9) | **trick(volatile-load)** | Script-command handler: tail-calls helper on mgr->+12->+100 with u16 args[1] and returns its result. |
+| `DllField` | `0x9e7e4` (0x28, 10/10) | **trick(volatile-load)** | Script-command handler: calls helper on mgr->+12->+100 with u16 args[1]; returns 0. |
+| `DllField` | `0x9ea94` (0x24, 9/9) | **trick(volatile-load)** | Script-command handler: tail-calls helper on mgr->+12->+100 with u16 args[1] and returns its result. |
+| `DllField` | `0x9eab8` (0x24, 9/9) | natural | Script-command handler: calls helper on mgr->+12->+100 with args[1]; returns 0. |
+| `DllField` | `0x9ee48` (0x18, 6/6) | natural | Returns the signed byte at +44 of the object mgr->+12->+100. |
+| `DllField` | `0x9f0e0` (0x20, 8/8) | natural | Script-command handler: tail-calls helper on mgr->+12->+100 with args[1] and returns its result. |
+| `DllField` | `0x9f188` (0x28, 10/10) | natural | Returns whether a helper on mgr->+12->+100 returns nonzero (result normalised to 0/1). |
+| `DllField` | `0x9f1fc` (0x30, 12/12) | **trick(volatile-load)** | Script-command handler: calls helper on mgr->+12->+100 with (u16 args[1] != 0); returns 0. |
+| `DllField` | `0x9feb4` (0x28, 10/10) | natural | Calls helper on the animation sub-object mgr->+12->+72->+240->+2740 (+724); returns 0. |
+| `DllField` | `0x9ff34` (0x24, 9/9) | natural | Tail-calls helper on mgr->+12->+72->+240->+2740 (+420) and returns its result. |
+| `DllField` | `0x9ff64` (0x24, 9/9) | **trick(volatile-load)** | Script-command handler: calls helper on mgr->+20 with u16 args[1]; returns 0. |
+| `DllField` | `0xa0008` (0x1c, 7/7) | natural | Script-command handler: tail-calls helper on mgr->+44 with args[1] and returns its result. |
+| `DllField` | `0xa02bc` (0x24, 9/9) | **trick(volatile-load)** | Script-command handler: calls helper on mgr->+20 with u16 args[1]; returns 0. |
+| `DllField` | `0xa02e0` (0x40, 16/16) | **trick(volatile-load)** | Member function: asks helper H1(mgr->+24, u16 field this->+68->+148); if true returns (H2() == 0), else 1. |
+| `DllField` | `0xa0be8` (0x20, 8/8) | natural | Tail-calls H(mgr->+24, mgr->+12->+72->+252) and returns its result. |
+| `DllField` | `0xa0c34` (0x40, 16/16) | **trick(volatile-load)** | Script-command handler: looks up an entry F(mgr->+16, u16 args[1]); returns its word +8, or (after an error call E(0,0,0)) 0 if missing. |
+| `DllField` | `0xa0cd8` (0x1c, 7/7) | natural | Script-command handler: tail-calls helper on mgr->+44 with args[1] and returns its result (byte-identical sibling of 0xa0008). |
+| `DllField` | `0xa0cf4` (0x40, 16/16) | **trick(volatile-load)** | Script-command handler: looks up an entry F(mgr->+16, u16 args[1]); returns its signed byte +30, or (after an error call E(0,0,0)) 0 if missing. |
+| `DllField` | `0xa13c4` (0x20, 8/8) | natural | Script-command handler: calls helper on mgr->+24 with args[1]; returns 0. |
+| `DllField` | `0xa14c0` (0x20, 8/8) | **trick(volatile-load)** | Script-command handler: tail-calls helper on mgr->+24 with u16 args[1] and returns its result. |
+
+Notes — **DllField GetMgr callers, `0x98000`-`0xa6000` (`armcc-r6-f3`, 43 matches):** `0x98000`-`0x9a000`: `0x980fc`, `0x9812c`, `0x98420`, `0x98588`, `0x98b84`, `0x98c24`, `0x98cec`, `0x98f30`, `0x99604`, `0x99638`, `0x9ad9c`, `0x9aeb8`; `0x9b000`-`0x9d000`: `0x9b950`, `0x9bae8`, `0x9bb28`, `0x9be50`, `0x9d214`, `0x9d374`, `0x9d534`, `0x9d564`, `0x9d688`, `0x9d9ec`; `0x9e000`-`0x9f000`: `0x9e018` (float args via `vpush`/`vmov`), `0x9e400`, `0x9e7e4`, `0x9ea94`, `0x9eab8`, `0x9ee48`, `0x9f0e0`, `0x9f188`, `0x9f1fc`; `0x9fe00`-`0xa0400`: `0x9feb4`, `0x9ff34`, `0x9ff64`, `0xa0008`, `0xa02bc`, `0xa02e0`; `0xa0b00`-`0xa1500`: `0xa0be8`, `0xa0c34`, `0xa0cd8`, `0xa0cf4`, `0xa13c4`, `0xa14c0`. **Lever confirmed for the arg-load width class:** declaring the script-command args pointer `volatile int *a` (or reading through `*(volatile int *)`) keeps a full `ldr` plus a separate `uxth` / `sxth` / `and #255`, as retail does (`trick(volatile-load)`); `0x9aeb8` matched as `*(volatile unsigned short *)(p + 4) & 15`. The unmatched handlers in the earlier width-class entries (`0x93d10`, `0x948f0`, `0x93b30`, `0x94d18`, ...) are candidates for a retry with it. The matched range stops at `0xa14c0`; `0x60`-`0xa4` byte callers were mostly not examined.
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction
