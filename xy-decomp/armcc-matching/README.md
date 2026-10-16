@@ -2800,6 +2800,20 @@ Notes — **DllBattle `0x90000`+ families (`armcc-r6-b3`):**
 - **Guarded tail call (9 sites, 0x2c, 11/11):** `if (g(G) == c) fnY(a);` — `0xb8dcc`, `0xb9dbc`, `0xb9ee4`, `0xba38c`, `0xbb244`, `0xc12a8`, `0xc1a3c`, `0xc1ebc`, `0xc3724`. **Guarded report helper (`0xa5db4` family, +12 sites, 0x2c, 11/11).**
 - Not attempted: the dtor-like family (`0x902c8`, `0x97688`, ...; `pop {r4,lr}` + nop = relaxation-nop residue); `mov r0,#N; pop {r4,pc}` fragments near `0xc933c` (switch pieces).
 
+## 2026-10-16 round b — batch 3 (DllBattle 0x30000-0x60000 x7)
+
+| Module | Offset (size, match) | Style | What |
+|---|---|---|---|
+| `DllBattle` | `0x4c0f8` (0x2c, 11/11) | natural | percent-chance roll: returns fnB(g.field54, 100) < a (fnB looks like a bounded random draw on a global RNG object at +84), i.e. true with probability a/100. |
+| `DllBattle` | `0x4c7d0` (0x2c, 11/11) | natural | range-checked address getter: returns o + 0x467a (+17920+122) when i < 320, else calls assert stub fnA(0,0,0) and still returns the pointer. |
+| `DllBattle` | `0x4d184` (0x44, 17/17) | **trick(ordering-local)** | range-checked hi-lo getter: asserts (fnA(0,0,0)) when i >= o->count (u8 at +338), then returns byte(+287+14i) - byte(+286+14i) (hi minus lo of a 14-byte-stride record; sibling of 0x520e4). |
+| `DllBattle` | `0x520e4` (0x38, 14/14) | natural | range-checked byte getter: returns o->arr[i*14] (u8 at +286, stride 14) when i < o->count (u8 at +338); otherwise calls assert stub fnA(0,0,0) and returns 0. |
+| `DllBattle` | `0x52774` (0x40, 16/16) | natural | range-pair getter: asserts (fnA(0,0,0)) when the u16 slot at +278+2i is zero, then returns byte(+281+2i) - byte(+280+2i) (hi minus lo of the next slot). |
+| `DllBattle` | `0x527b8` (0x34, 13/13) | natural | checked byte getter: asserts (fnA(0,0,0)) when the u16 slot at +278+2i is zero, then returns the u8 at +280+2i (sibling of 0x52774). |
+| `DllBattle` | `0x544a0` (0x4c, 19/19) | natural | range-checked int getter: asserts (fnA(0,0,0)) when i >= 24 and when o->p->v[i] (int array at +132 of the object at o+8) is 0, then returns o->p->v[i]. |
+
+Notes — **DllBattle `0x30000`-`0x60000` (`armcc-r6-b1`):** `0x520e4` returns the u8 at +286+14i when i < the u8 count at +338, else asserts (`fnA(0,0,0)`) and returns 0; `0x4c7d0` returns `o + 0x467a` (assert if i ≥ 320); `0x4c0f8` is a percent-chance roll `fnB(g.v, 100) < a` (`extern struct G g`); `0x52774` / `0x527b8` assert the u16 slot at +278+2i is non-zero then return byte differences / a byte; `0x4d184` is a `.cpp` only because it declares a local after a statement; `0x544a0` asserts i < 24 and `o->p->v[i]` non-zero, returns it. **Pool-pad candidates** (start at 4 mod 8; code words match, only the literal pool differs): `0x3bdd8`, `0x3e7a4`, `0x3981c`, `0x3b534` — now reachable with `--pool-pad`. **New finding:** armcc has no `__rev16` intrinsic (it emits a call), but `((v & 0xff) << 8) | (v >> 8)` on an `unsigned short v` compiles to a real `rev16 r0,r0` (`__rev(x)` is the word rev). Unmatched leftovers in `attempted.md` (`0x3e920`, `0x551d4`, `0x397b8`, `0x4bfd0`, `0x4b394`, `0x4b3f8`, `0x4e808`).
+
 ## What this does *not* do yet
 
 This is per-function fingerprinting (prove a candidate's instruction

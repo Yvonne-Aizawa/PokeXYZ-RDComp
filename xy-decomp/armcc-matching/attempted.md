@@ -15,6 +15,20 @@ file is only for things still unsolved.
 Format per entry:
 
 ```
+## DllBattle 0x30000-0x60000 `push` sweep, round b -- unmatched leftovers
+
+Round matches: 0x520e4, 0x4c7d0, 0x4c0f8, 0x52774, 0x527b8, 0x4d184, 0x544a0 (see matched-*.md). Candidate list was re-derived by bounding push..pop/bx lr over the .text window (0x14-0x80 bytes), minus matched/attempted.
+
+- 0x3e920 (0x40): trace-style prefix `k=0x97d; if (G.v != k) G.v = k;` (global struct +108) then `fnC(o->p400, b, 0); o->p400->w1096 = c`. Code words match modulo registers: retail loads &G into r2 AFTER `mov r5,r2` and keeps r3 for the old value; armcc hoists `ldr r3,[pc]` above the push-saved moves and uses r3 as the address (10/16 best, `struct T *t = &G; int k=..` form). Pool order also differs (retail: &G first, K second).
+- 0x3bdd8 / 0x3e7a4 / 0x3981c / 0x3b534 (all start at 4 mod 8): same trace prefix on an ARG pointer (`c->v` at +108 = arg3 or arg2). Code words match 9/12 but ONLY the literal pool differs: retail has a 0 pad word before the constant (function at 4 mod 8, pool 8-aligned); standalone compile has none. Same verifier limitation as the 0x71a2c note in attempted.md -- would match if the verifier tolerated pool-alignment padding.
+- 0x551d4 (0x38): `if (fnA(*o,2)) return 0; return fnB(o,13) != 0;` 12/14; only diff is `mov r0,r4; mov r1,#13` (retail) vs `mov r1,#13; mov r0,r4` (armcc). Tried if/ternary/r-var forms and a C++ member call.
+- 0x397b8 (0x44): vcall slot 25 (this,0) then slot 32 (this,r); return r==175?1:r==102?2:0. Retail keeps this in r0 and uses r1 as the vtable-load scratch (`ldr r1,[r0]; mov r4,r0; ldr r2,[r1,#100]; mov r1,#0; blx r2`); armcc always loads the vtable into r0 and needs `mov r0,r4` (2/17; prototyped casts, unprototyped `int (**vt)()`, C++ virtuals all give the same shape).
+- 0x4bfd0 (0x30): `if (i>=7) fnA(0,0,0); return o->v[i]` (+28) 10/12; callee-saved swap r4/r5 (`mov r5,r0; mov r4,r1` retail vs reverse) -- the known 0x4cf8c class.
+- 0x4b394 (0x54): 10-slot 3-byte record table at +0x120c; assert i<10, assert rec.a!=0, return rec.c. 15/21 with `p = o+0x120c` local; only r4/r5 swapped (retail: index r4, base r5).
+- 0x4b3f8 (0x60): `r = fnX(o+0x120c, c); l = o->p3520; if (l->n < 10) { l->a[n]=a; l->c[n]=c(+21); l->r[n]=r(+11); l->n++ }` 6/24; retail keeps the call result in r0 and loads `l` into r3, armcc copies r0 to ip and uses r0 for l; also r4/r5/r6 assignment differs.
+- 0x4e808 (0x4c): big-endian u16 reader {size,pos,data@8}: assert pos < size-1; v = *(u16*)(d+pos); pos += 2; return rev16(v). NEW: armcc has no `__rev16` intrinsic (emits a call) but `((v & 0xff) << 8) | (v >> 8)` on an `unsigned short v` compiles to a real `rev16 r0,r0`; `__rev(x)` is the word rev. Best 13/19 (pointer-local form): retail loads size first (`ldr r1,[r0]` before `mov r4,r0`) and uses `add r2,r0,#2 ; ldrh r0,[r1] ; str r2` ordering; armcc does `add r0,r0,#2 ; str ; ldrh`.
+- 0x4c438 (nop-relaxation `bl; b; nop`), 0x52db0 (jump table + relaxation nops), 0x5c9b8/0x4cbe4/0x5c95c (VFP float math) not attempted.
+
 ## DllField@0xc2824 / 0xcd2dc (and deleting variants 0xc27ec / 0xcd2a4) -- dtor member-load-order residue
 
 Module: DllField
